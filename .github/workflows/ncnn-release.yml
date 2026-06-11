@@ -138,7 +138,7 @@ jobs:
           cp android/library/build/FastAlpr.aar release-artifacts/
           cp android/sample/build/sample-debug.apk release-artifacts/
 
-       - name: Upload Android Build Artifacts
+      - name: Upload Android Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: alpr-ncnn-android
