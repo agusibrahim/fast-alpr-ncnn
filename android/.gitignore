@@ -1,0 +1,9 @@
+# Build files
+library/build/
+sample/build/
+
+# Downloaded SDKs
+library/src/main/jni/3rdparty/ncnn/
+
+# Keystores
+debug.keystore
