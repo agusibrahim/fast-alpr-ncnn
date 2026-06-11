@@ -91,7 +91,9 @@ public class MainActivity extends Activity {
     private void loadAndProcessAsset(String fileName) {
         try {
             InputStream is = getAssets().open(fileName);
-            Bitmap bitmap = BitmapFactory.decodeStream(is);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
             is.close();
             if (bitmap != null) {
                 processImage(bitmap);
@@ -180,7 +182,9 @@ public class MainActivity extends Activity {
             try {
                 Uri selectedImage = data.getData();
                 InputStream is = getContentResolver().openInputStream(selectedImage);
-                Bitmap bitmap = BitmapFactory.decodeStream(is);
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+                Bitmap bitmap = BitmapFactory.decodeStream(is, null, options);
                 is.close();
                 if (bitmap != null) {
                     processImage(bitmap);

@@ -51,6 +51,7 @@ public:
         support_inplace = false;
     }
     virtual int forward(const ncnn::Mat& bottom_blob, ncnn::Mat& top_blob, const ncnn::Option& opt) const {
+        LOGI("[ArgMax_custom] forward: bottom_blob w=%d, h=%d, c=%d, dims=%d", bottom_blob.w, bottom_blob.h, bottom_blob.c, bottom_blob.dims);
         int w = bottom_blob.w;
         int h = bottom_blob.h;
         int channels = bottom_blob.c;
@@ -106,8 +107,16 @@ public:
         support_inplace = false;
     }
     virtual int forward(const std::vector<ncnn::Mat>& bottom_blobs, std::vector<ncnn::Mat>& top_blobs, const ncnn::Option& opt) const {
+        LOGI("[NonMaxSuppression_custom] forward: bottom_blobs.size=%d, top_blobs.size=%d", (int)bottom_blobs.size(), (int)top_blobs.size());
+        if (bottom_blobs.size() < 2 || top_blobs.empty()) {
+            LOGE("[-] NonMaxSuppression_custom: invalid bottom/top blobs size!");
+            return -1;
+        }
         const ncnn::Mat& boxes = bottom_blobs[0];
         const ncnn::Mat& scores = bottom_blobs[1];
+        LOGI("  boxes shape: w=%d, h=%d, c=%d, dims=%d", boxes.w, boxes.h, boxes.c, boxes.dims);
+        LOGI("  scores shape: w=%d, h=%d, c=%d, dims=%d", scores.w, scores.h, scores.c, scores.dims);
+
         int max_output_boxes = 100;
         if (bottom_blobs.size() > 2 && !bottom_blobs[2].empty()) {
             float val = ((const float*)bottom_blobs[2])[0];
@@ -192,8 +201,16 @@ public:
         support_inplace = false;
     }
     virtual int forward(const std::vector<ncnn::Mat>& bottom_blobs, std::vector<ncnn::Mat>& top_blobs, const ncnn::Option& opt) const {
+        LOGI("[Gather_custom] forward: bottom_blobs.size=%d, top_blobs.size=%d", (int)bottom_blobs.size(), (int)top_blobs.size());
+        if (bottom_blobs.size() < 2 || top_blobs.empty()) {
+            LOGE("[-] Gather_custom: invalid bottom/top blobs size!");
+            return -1;
+        }
         const ncnn::Mat& data = bottom_blobs[0];
         const ncnn::Mat& indices = bottom_blobs[1];
+        LOGI("  data shape: w=%d, h=%d, c=%d, dims=%d", data.w, data.h, data.c, data.dims);
+        LOGI("  indices shape: w=%d, h=%d, c=%d, dims=%d", indices.w, indices.h, indices.c, indices.dims);
+
         int num_indices = indices.w * indices.h * indices.c;
         const float* indices_ptr = indices;
         ncnn::Mat& top_blob = top_blobs[0];
@@ -250,6 +267,7 @@ public:
         support_inplace = false;
     }
     virtual int forward(const ncnn::Mat& bottom_blob, ncnn::Mat& top_blob, const ncnn::Option& opt) const {
+        LOGI("[Shape_custom] forward: bottom_blob w=%d, h=%d, c=%d, dims=%d", bottom_blob.w, bottom_blob.h, bottom_blob.c, bottom_blob.dims);
         top_blob.create(4, sizeof(float), opt.blob_allocator);
         if (top_blob.empty()) return -100;
         float* ptr = top_blob;
@@ -361,6 +379,7 @@ Java_com_agusibrahim_fastalpr_FastAlpr_init(JNIEnv* env, jobject thiz, jobject a
     // Initialize YOLOv9
     LOGI("[+] Loading YOLOv9 model from Assets...");
     g_yolo_net = new ncnn::Net();
+    g_yolo_net->opt.use_vulkan_compute = false;
     g_yolo_net->opt.use_fp16_storage = false;
     g_yolo_net->opt.use_fp16_arithmetic = false;
     g_yolo_net->opt.use_fp16_packed = false;
@@ -368,10 +387,7 @@ Java_com_agusibrahim_fastalpr_FastAlpr_init(JNIEnv* env, jobject thiz, jobject a
     g_yolo_net->register_custom_layer("NonMaxSuppression", NonMaxSuppression_custom_creator);
     g_yolo_net->register_custom_layer("Gather", Gather_custom_creator);
     
-    if (g_yolo_net->load_param(mgr, "ocr.param") != 0 && g_yolo_net->load_param(mgr, "yolo.param") != 0) {
-        // NCNN has a quirks where load_param sometimes requires trying different layouts.
-        // We load yolo.param / yolo.bin from assets
-    }
+
     if (g_yolo_net->load_param(mgr, "yolo.param") != 0 ||
         g_yolo_net->load_model(mgr, "yolo.bin") != 0) {
         LOGE("[-] Failed to load YOLOv9 model from Assets!");
@@ -383,6 +399,7 @@ Java_com_agusibrahim_fastalpr_FastAlpr_init(JNIEnv* env, jobject thiz, jobject a
     // Initialize CCT-XS OCR
     LOGI("[+] Loading CCT-XS OCR model from Assets...");
     g_ocr_net = new ncnn::Net();
+    g_ocr_net->opt.use_vulkan_compute = false;
     g_ocr_net->opt.use_fp16_packed = false;
     g_ocr_net->opt.use_fp16_storage = false;
     g_ocr_net->opt.use_fp16_arithmetic = false;
@@ -416,6 +433,13 @@ Java_com_agusibrahim_fastalpr_FastAlpr_nativeDetect(JNIEnv* env, jobject thiz, j
     void* pixels = nullptr;
     if (AndroidBitmap_getInfo(env, bitmap, &info) < 0 || AndroidBitmap_lockPixels(env, bitmap, &pixels) < 0) {
         LOGE("[-] Failed to lock bitmap pixels");
+        pthread_mutex_unlock(&g_lock);
+        return nullptr;
+    }
+
+    if (info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        LOGE("[-] Unsupported bitmap format: %d. Expected RGBA_8888.", info.format);
+        AndroidBitmap_unlockPixels(env, bitmap);
         pthread_mutex_unlock(&g_lock);
         return nullptr;
     }
@@ -457,7 +481,7 @@ Java_com_agusibrahim_fastalpr_FastAlpr_nativeDetect(JNIEnv* env, jobject thiz, j
 
     // 3. Run YOLOv9 Inference
     ncnn::Extractor yolo_ex = g_yolo_net->create_extractor();
-    yolo_ex.set_light_mode(true);
+    yolo_ex.set_light_mode(false);
     yolo_ex.input("images", yolo_in);
 
     ncnn::Mat nms_out;

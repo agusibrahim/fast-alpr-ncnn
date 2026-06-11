@@ -9,9 +9,14 @@ echo "  Android Standalone Build (Without Gradle)  "
 echo "============================================="
 
 # 1. Auto-detect Android SDK & NDK
-SDK_DIR="$HOME/Library/Android/sdk"
-if [ ! -d "$SDK_DIR" ]; then
-    echo "[-] Android SDK not found at $SDK_DIR. Please specify manually."
+if [ -d "$HOME/Library/Android/sdk" ]; then
+    SDK_DIR="$HOME/Library/Android/sdk"
+elif [ -n "$ANDROID_SDK_ROOT" ] && [ -d "$ANDROID_SDK_ROOT" ]; then
+    SDK_DIR="$ANDROID_SDK_ROOT"
+elif [ -n "$ANDROID_HOME" ] && [ -d "$ANDROID_HOME" ]; then
+    SDK_DIR="$ANDROID_HOME"
+else
+    echo "[-] Android SDK not found. Please set ANDROID_SDK_ROOT or ANDROID_HOME."
     exit 1
 fi
 echo "[+] Android SDK: $SDK_DIR"
@@ -22,6 +27,13 @@ if [ -z "$NDK_DIR" ]; then
     exit 1
 fi
 echo "[+] Android NDK: $NDK_DIR"
+
+OMP_SO=$(find "${NDK_DIR}/toolchains/llvm/prebuilt" -path "*/lib/linux/aarch64/libomp.so" | head -n 1)
+if [ -z "$OMP_SO" ]; then
+    echo "[-] libomp.so not found under $NDK_DIR"
+    exit 1
+fi
+echo "[+] Found libomp.so: $OMP_SO"
 
 BUILD_TOOLS=$(ls -d ${SDK_DIR}/build-tools/* 2>/dev/null | sort -V | tail -n 1)
 if [ -z "$BUILD_TOOLS" ]; then
@@ -96,11 +108,13 @@ mkdir -p library/build/aar-dir/assets
 cp library/src/main/AndroidManifest.xml library/build/aar-dir/
 cp library/build/classes.jar library/build/aar-dir/
 cp library/build/arm64-v8a/libfast_alpr_ncnn.so library/build/aar-dir/jni/arm64-v8a/
+cp "$OMP_SO" library/build/aar-dir/jni/arm64-v8a/
 # Bundle model files directly inside AAR assets
 cp ../models/yolo.param ../models/yolo.bin ../models/ocr.param ../models/ocr_patched.bin library/build/aar-dir/assets/
 
 cd library/build/aar-dir
-zip -q -r ../FastAlpr.aar .
+zip -q -r ../FastAlpr.aar . -x "assets/*" "jni/*"
+zip -q -r -0 ../FastAlpr.aar assets/ jni/
 cd ../../..
 
 echo "[✓] Library AAR ready: library/build/FastAlpr.aar"
@@ -151,13 +165,15 @@ mkdir -p sample/build/apk-content/assets
 
 cp sample/build/dex/classes.dex sample/build/apk-content/
 cp library/build/arm64-v8a/libfast_alpr_ncnn.so sample/build/apk-content/lib/arm64-v8a/
+cp "$OMP_SO" sample/build/apk-content/lib/arm64-v8a/
 # Add model files to assets
 cp ../models/yolo.param ../models/yolo.bin ../models/ocr.param ../models/ocr_patched.bin sample/build/apk-content/assets/
 # Add sample photos to assets
 cp ../65f9903cda758.jpg ../20220507_165417.jpg sample/build/apk-content/assets/
 
 cd sample/build/apk-content
-zip -q -r ../sample-unsigned.apk .
+zip -q -r ../sample-unsigned.apk . -x "assets/*" "lib/*"
+zip -q -r -0 ../sample-unsigned.apk assets/ lib/
 cd ../../..
 
 echo "[+] Aligning APK..."

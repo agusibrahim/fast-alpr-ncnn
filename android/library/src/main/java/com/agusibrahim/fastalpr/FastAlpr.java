@@ -5,6 +5,11 @@ import android.graphics.Bitmap;
 
 public class FastAlpr {
     static {
+        try {
+            System.loadLibrary("omp");
+        } catch (UnsatisfiedLinkError e) {
+            // Ignore if already loaded or not required
+        }
         System.loadLibrary("fast_alpr_ncnn");
     }
 

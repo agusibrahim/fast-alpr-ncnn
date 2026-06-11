@@ -101,9 +101,53 @@ jobs:
           path: release-artifacts/
           retention-days: 1
 
+  build-android:
+    name: Build Android AAR & APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Check Android SDK & NDK
+        run: |
+          echo "ANDROID_SDK_ROOT: $ANDROID_SDK_ROOT"
+          echo "ANDROID_HOME: $ANDROID_HOME"
+          if [ -d "$ANDROID_SDK_ROOT" ]; then
+            echo "Available NDK versions:"
+            ls -la "$ANDROID_SDK_ROOT/ndk" || echo "No ndk directory"
+          else
+            echo "Android SDK not found"
+          fi
+
+      - name: Build Android components
+        shell: bash
+        run: |
+          cd android
+          chmod +x build_android.sh
+          ./build_android.sh
+
+      - name: Package Android Artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp android/library/build/FastAlpr.aar release-artifacts/
+          cp android/sample/build/sample-debug.apk release-artifacts/
+
+      - name: Upload Android Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpr-ncnn-android
+          path: release-artifacts/
+          retention-days: 1
+
   release-cpp:
     name: Publish C++ Releases
-    needs: build-cpp
+    needs: [build-cpp, build-android]
     runs-on: ubuntu-latest
     if: always()
     permissions:
