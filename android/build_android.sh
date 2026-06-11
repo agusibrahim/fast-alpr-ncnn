@@ -119,6 +119,8 @@ RES_FILES=$(find sample/build/res-compiled -name "*.flat")
 "${BUILD_TOOLS}/aapt2" link \
     -I "$PLATFORM_JAR" \
     --manifest sample/src/main/AndroidManifest.xml \
+    --min-sdk-version 24 \
+    --target-sdk-version 34 \
     --java sample/build/gen \
     -o sample/build/resources-debug.ap_ \
     ${RES_FILES}
