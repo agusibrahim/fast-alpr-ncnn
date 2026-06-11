@@ -241,7 +241,7 @@ jobs:
           # Copy static HTML
           cp wasm/index.html gh-pages-site/
           # Copy test images
-          cp wasm/65f9903cda758.jpg wasm/20220507_165417.jpg gh-pages-site/
+          cp 65f9903cda758.jpg 20220507_165417.jpg gh-pages-site/
           # Copy models
           mkdir -p gh-pages-site/models
           cp models/yolo.param models/yolo.bin models/ocr.param models/ocr_patched.bin gh-pages-site/models/
