@@ -42,9 +42,10 @@ public class MainActivity extends Activity {
         Button btnSample1 = findViewById(getResources().getIdentifier("btn_sample1", "id", getPackageName()));
         Button btnSample2 = findViewById(getResources().getIdentifier("btn_sample2", "id", getPackageName()));
         Button btnGallery = findViewById(getResources().getIdentifier("btn_gallery", "id", getPackageName()));
+        Button btnLiveCamera = findViewById(getResources().getIdentifier("btn_live_camera", "id", getPackageName()));
 
         alpr = new FastAlpr();
-
+        
         // Initialize ALPR in a separate thread so UI does not freeze
         txtLog.setText("Loading models... Please wait...");
         new Thread(new Runnable() {
@@ -84,6 +85,14 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, REQUEST_PICK_IMAGE);
+            }
+        });
+
+        btnLiveCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, LiveCameraActivity.class);
+                startActivity(intent);
             }
         });
     }

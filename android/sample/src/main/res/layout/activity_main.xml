@@ -63,6 +63,13 @@
             android:textSize="12sp" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/btn_live_camera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Live Camera Detection" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
