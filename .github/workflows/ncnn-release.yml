@@ -138,16 +138,54 @@ jobs:
           cp android/library/build/FastAlpr.aar release-artifacts/
           cp android/sample/build/sample-debug.apk release-artifacts/
 
-      - name: Upload Android Build Artifacts
+       - name: Upload Android Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: alpr-ncnn-android
           path: release-artifacts/
           retention-days: 1
 
+  build-wasm:
+    name: Build WebAssembly (WASM)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 'latest'
+
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.22.x'
+
+      - name: Build WASM module
+        shell: bash
+        run: |
+          cd wasm
+          chmod +x build_wasm.sh
+          ./build_wasm.sh
+
+      - name: Package WASM Artifacts
+        run: |
+          mkdir -p release-artifacts
+          cd wasm
+          zip -q -r ../release-artifacts/fast_alpr_wasm.zip fast_alpr_wasm.js fast_alpr_wasm.wasm
+          cd ..
+
+      - name: Upload WASM Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpr-ncnn-wasm
+          path: release-artifacts/
+          retention-days: 1
+
   release-cpp:
     name: Publish C++ Releases
-    needs: [build-cpp, build-android]
+    needs: [build-cpp, build-android, build-wasm]
     runs-on: ubuntu-latest
     if: always()
     permissions:
@@ -196,3 +234,24 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare GitHub Pages site
+        run: |
+          mkdir -p gh-pages-site
+          # Copy static HTML
+          cp wasm/index.html gh-pages-site/
+          # Copy test images
+          cp wasm/65f9903cda758.jpg wasm/20220507_165417.jpg gh-pages-site/
+          # Copy models
+          mkdir -p gh-pages-site/models
+          cp models/yolo.param models/yolo.bin models/ocr.param models/ocr_patched.bin gh-pages-site/models/
+          # Unzip compiled WASM files
+          unzip -o all-artifacts/alpr-ncnn-wasm/fast_alpr_wasm.zip -d gh-pages-site/
+
+      - name: Deploy to GitHub Pages
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./gh-pages-site
+
