@@ -6,8 +6,10 @@ An extremely fast, lightweight, and self-contained Automatic License Plate Recog
 
 * **Blazing Fast**: Processes multiple plates sequentially in **~149 ms** on standard CPUs (~75 ms per plate).
 * **Zero Dependencies**: Builds into a clean, portable package with models included. No heavy machine learning frameworks required at runtime.
-* **Cross-Platform**: Fully compatible and tested on macOS, Linux, and Windows.
+* **Cross-Platform**: Native Desktop CLI (macOS, Linux, Windows), Android JNI Library (AAR), and WebAssembly (WASM) for web browser deployments.
 * **Smart Compilation**: Automated build setup. Apple Silicon uses a fast precompiled library, while Linux and Windows compile NCNN from source automatically.
+* **Accurate OCR Decoding**: Decodes multi-head CCT-XS output without CTC duplicate collapsing, accurately recognizing consecutive matching characters (e.g., `1111` or `MM`).
+* **Edge-Aware Padding**: Bounding boxes are automatically padded (8% width expand left & right) to guarantee that characters at the plate boundaries (e.g., `D` or `M`) are not cut off during cropping.
 
 ---
 
@@ -65,19 +67,8 @@ make -j$(nproc)
 
 ---
 
-## 📦 GitHub Actions Release Management
+## 📦 Releases & Prebuilt Binaries
 
-This project has a dedicated GitHub Actions workflow located in [.github/workflows/ncnn-release.yml](.github/workflows/ncnn-release.yml).
+Prebuilt binaries for all supported platforms (macOS, Linux, Windows, Android AAR, and WebAssembly) are automatically built and packaged.
 
-When you push a version tag (e.g., `v1.0.0`), the workflow automatically:
-1. Configures the environment on macOS, Linux, and Windows.
-2. Fetches and compiles NCNN from source (and links statically on macOS).
-3. Compiles the `alpr_ncnn` target in Release mode.
-4. Bundles the compiled binary **together with its optimized models** (`models/` folder) into a single portable `.tar.gz` archive (`alpr_ncnn-cpp-<target>.tar.gz`).
-5. Publishes the archive as an asset to your GitHub Repository Releases.
-
-To trigger a release:
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+You can download the latest standalone binaries, Android libraries, and WebAssembly packages from the [GitHub Releases](https://github.com/agusibrahim/fast-alpr-ncnn/releases) page.
