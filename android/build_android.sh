@@ -50,11 +50,17 @@ fi
 echo "[+] Platform SDK Jar: $PLATFORM_JAR"
 
 # 2. Download & setup NCNN Android SDK (vulkan release)
-NCNN_SDK_URL="https://github.com/Tencent/ncnn/releases/download/20240410/ncnn-20240410-android-vulkan.zip"
-NCNN_ZIP_NAME="ncnn-20240410-android-vulkan.zip"
+NCNN_SDK_URL="https://github.com/Tencent/ncnn/releases/download/20260526/ncnn-20260526-android-vulkan.zip"
+NCNN_ZIP_NAME="ncnn-20260526-android-vulkan.zip"
 NCNN_DIR="library/src/main/jni/3rdparty/ncnn"
 
 mkdir -p library/src/main/jni/3rdparty
+
+# Check if the folder is outdated or doesn't have the correct version marker
+if [ -d "$NCNN_DIR" ] && [ ! -f "$NCNN_DIR/ncnn_version_20260526.txt" ]; then
+    echo "[+] Outdated or missing version marker for NCNN SDK. Cleaning..."
+    rm -rf "$NCNN_DIR"
+fi
 
 if [ ! -d "$NCNN_DIR" ]; then
     echo "[+] Downloading NCNN Android SDK..."
@@ -63,11 +69,12 @@ if [ ! -d "$NCNN_DIR" ]; then
     unzip -q "$NCNN_ZIP_NAME"
     
     # Structure it as expected by CMakeLists.txt
-    mv ncnn-20240410-android-vulkan "$NCNN_DIR"
+    mv ncnn-20260526-android-vulkan "$NCNN_DIR"
+    touch "$NCNN_DIR/ncnn_version_20260526.txt"
     rm -f "$NCNN_ZIP_NAME"
     echo "[+] NCNN SDK set up successfully."
 else
-    echo "[+] NCNN SDK already exists locally."
+    echo "[+] NCNN SDK already exists locally and is up to date."
 fi
 
 # 3. Clean up build directories
