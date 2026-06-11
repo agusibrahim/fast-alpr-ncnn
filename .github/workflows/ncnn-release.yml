@@ -33,10 +33,10 @@ jobs:
             suffix: ".exe"
 
           # macOS Intel x86_64
-          - os: macos-13
-            target: x86_64-apple-darwin
-            binary_name: alpr_ncnn
-            suffix: ""
+          # - os: macos-13
+          #   target: x86_64-apple-darwin
+          #   binary_name: alpr_ncnn
+          #   suffix: ""
 
           # macOS ARM64
           - os: macos-latest
