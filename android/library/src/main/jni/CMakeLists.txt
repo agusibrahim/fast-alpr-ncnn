@@ -32,7 +32,6 @@ target_link_libraries(fast_alpr_ncnn
     "${NCNN_LIB_DIR}/libMachineIndependent.a"
     "${NCNN_LIB_DIR}/libOSDependent.a"
     "${NCNN_LIB_DIR}/libGenericCodeGen.a"
-    "${NCNN_LIB_DIR}/libOGLCompiler.a"
     vulkan
     omp
     jnigraphics
