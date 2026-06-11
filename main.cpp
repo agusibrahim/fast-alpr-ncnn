@@ -691,6 +691,12 @@ int main(int argc, char** argv) {
         int x2 = (int)std::round((pad_x2 - pad_x) / scale);
         int y2 = (int)std::round((pad_y2 - pad_y) / scale);
         
+        // Widen left and right by 8% of the bounding box width
+        int bbox_w = x2 - x1;
+        int pad_val = (int)std::round(bbox_w * 0.08f);
+        x1 -= pad_val;
+        x2 += pad_val;
+        
         BoundingBox bbox;
         bbox.x1 = std::max(0, std::min(x1, img_w - 1));
         bbox.y1 = std::max(0, std::min(y1, img_h - 1));
@@ -762,11 +768,10 @@ int main(int argc, char** argv) {
         ncnn::Mat ocr_out;
         int ret = ocr_ex.extract("plate", ocr_out);
         
-        // Greedy CTC Decoding
+        // Greedy Decoding (no CTC collapsing for multi-head classification)
         // ocr_out shape is (w=37, h=10, c=1), where w is num_classes (37) and h is seq_len (10)
         std::string ocr_text = "";
         std::vector<float> ocr_scores;
-        int prev_index = BLANK_INDEX;
         
         for (int t = 0; t < ocr_out.h; ++t) {
             const float* row = ocr_out.row(t);
@@ -783,16 +788,15 @@ int main(int argc, char** argv) {
             if (g_verbose) {
                 std::cout << "  t=" << t << ": argmax=" << max_index << " value=" << max_prob 
                           << " (char=" << (max_index < (int)CHARSET.size() ? std::string(1, CHARSET[max_index]) : "<BLANK>") << ")" << std::endl;
-            }
+             }
             
-            // CTC merge logic: skip consecutive duplicates and blank characters
-            if (max_index != BLANK_INDEX && max_index != prev_index) {
+            // Only skip blank characters
+            if (max_index != BLANK_INDEX) {
                 if (max_index < (int)CHARSET.size()) {
                     ocr_text += CHARSET[max_index];
                     ocr_scores.push_back(max_prob);
                 }
             }
-            prev_index = max_index;
         }
         
         float avg_ocr_conf = 0.0f;

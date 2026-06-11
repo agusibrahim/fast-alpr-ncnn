@@ -466,6 +466,12 @@ std::vector<WasmAlprResult> detect(uintptr_t rgba_ptr, int img_w, int img_h, boo
         int x2 = (int)std::round((pad_x2 - pad_x) / scale);
         int y2 = (int)std::round((pad_y2 - pad_y) / scale);
 
+        // Widen left and right by 8% of the bounding box width
+        int bbox_w = x2 - x1;
+        int pad_val = (int)std::round(bbox_w * 0.08f);
+        x1 -= pad_val;
+        x2 += pad_val;
+
         BoundingBox bbox;
         bbox.x1 = std::max(0, std::min(x1, img_w - 1));
         bbox.y1 = std::max(0, std::min(y1, img_h - 1));
@@ -517,7 +523,6 @@ std::vector<WasmAlprResult> detect(uintptr_t rgba_ptr, int img_w, int img_h, boo
             if (ocr_ex.extract("plate", ocr_out) == 0) {
                 std::string ocr_text = "";
                 std::vector<float> ocr_scores;
-                int prev_index = BLANK_INDEX;
                 for (int t = 0; t < ocr_out.h; ++t) {
                     const float* row = ocr_out.row(t);
                     int max_index = -1;
@@ -525,13 +530,12 @@ std::vector<WasmAlprResult> detect(uintptr_t rgba_ptr, int img_w, int img_h, boo
                     for (int c = 0; c < ocr_out.w; ++c) {
                         if (row[c] > max_prob) { max_prob = row[c]; max_index = c; }
                     }
-                    if (max_index != BLANK_INDEX && max_index != prev_index) {
+                    if (max_index != BLANK_INDEX) {
                         if (max_index < (int)CHARSET.size()) {
                             ocr_text += CHARSET[max_index];
                             ocr_scores.push_back(max_prob);
                         }
                     }
-                    prev_index = max_index;
                 }
                 res.plate = ocr_text;
                 float sum = 0.0f;
