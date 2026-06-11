@@ -1,0 +1,148 @@
+name: Build and Release C++ Standalone
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-cpp:
+    name: Build C++ ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            target: x86_64-linux-gnu
+            binary_name: alpr_ncnn
+            suffix: ""
+
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary_name: alpr_ncnn.exe
+            suffix: ".exe"
+
+          # macOS Intel x86_64
+          - os: macos-13
+            target: x86_64-apple-darwin
+            binary_name: alpr_ncnn
+            suffix: ""
+
+          # macOS ARM64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            binary_name: alpr_ncnn
+            suffix: ""
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Build Tools
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git libgomp1
+
+      - name: Configure and Build C++ Standalone
+        id: build
+        shell: bash
+        run: |
+          mkdir -p build
+          cd build
+          cmake -DCMAKE_BUILD_TYPE=Release ..
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cmake --build . --config Release
+          else
+            make -j2
+          fi
+
+      - name: Package Standalone Artifacts
+        id: package
+        shell: bash
+        run: |
+          mkdir -p release-artifacts
+          
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            if [ -f "build/Release/alpr_ncnn.exe" ]; then
+              cd build/Release
+              tar -czf ../../release-artifacts/alpr_ncnn-cpp-${{ matrix.target }}.tar.gz alpr_ncnn.exe models
+              cd ../..
+              echo "pack_success=true" >> $GITHUB_OUTPUT
+            else
+              echo "pack_success=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            if [ -f "build/alpr_ncnn" ]; then
+              cd build
+              tar -czf ../release-artifacts/alpr_ncnn-cpp-${{ matrix.target }}.tar.gz alpr_ncnn models
+              cd ..
+              echo "pack_success=true" >> $GITHUB_OUTPUT
+            else
+              echo "pack_success=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Upload Build Artifact
+        if: steps.package.outputs.pack_success == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpr-ncnn-${{ matrix.target }}
+          path: release-artifacts/
+          retention-days: 1
+
+  release-cpp:
+    name: Publish C++ Releases
+    needs: build-cpp
+    runs-on: ubuntu-latest
+    if: always()
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: Prepare release files
+        id: prepare-release
+        run: |
+          mkdir -p release-files
+          found_any=false
+          
+          for dir in all-artifacts/*/; do
+            if [ -d "$dir" ]; then
+              echo "Processing artifact directory: $dir"
+              cp -v "$dir"* release-files/ 2>/dev/null || true
+              if [ -n "$(ls -A "$dir" 2>/dev/null)" ]; then
+                found_any=true
+              fi
+            fi
+          done
+          
+          if [ "$found_any" = true ]; then
+            echo "release_ready=true" >> $GITHUB_OUTPUT
+            echo "Files ready for release:"
+            ls -lh release-files/
+          else
+            echo "release_ready=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.prepare-release.outputs.release_ready == 'true' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,616 @@
+7767517
+614 733
+Input            images                   0 1 images
+MemoryData       /end2end/Add_1_output_0  0 1 /end2end/Add_1_output_0 0=0
+Split            splitncnn_0              1 3 /end2end/Add_1_output_0 /end2end/Add_1_output_0_splitncnn_0 /end2end/Add_1_output_0_splitncnn_1 /end2end/Add_1_output_0_splitncnn_2
+MemoryData       /end2end/Constant_24_output_0 0 1 /end2end/Constant_24_output_0 0=2
+MemoryData       /end2end/Constant_25_output_0 0 1 /end2end/Constant_25_output_0 0=1
+MemoryData       /end2end/Constant_26_output_0 0 1 /end2end/Constant_26_output_0 0=1
+MemoryData       /model/model.2/Constant_1_output_0 0 1 /model/model.2/Constant_1_output_0 0=2
+MemoryData       /model/model.2/Constant_4_output_0 0 1 /model/model.2/Constant_4_output_0 0=2
+Split            splitncnn_1              1 9 /model/model.2/Constant_4_output_0 /model/model.2/Constant_4_output_0_splitncnn_0 /model/model.2/Constant_4_output_0_splitncnn_1 /model/model.2/Constant_4_output_0_splitncnn_2 /model/model.2/Constant_4_output_0_splitncnn_3 /model/model.2/Constant_4_output_0_splitncnn_4 /model/model.2/Constant_4_output_0_splitncnn_5 /model/model.2/Constant_4_output_0_splitncnn_6 /model/model.2/Constant_4_output_0_splitncnn_7 /model/model.2/Constant_4_output_0_splitncnn_8
+MemoryData       /model/model.22/Constant_4_output_0 0 1 /model/model.22/Constant_4_output_0 0=4
+MemoryData       /model/model.22/Constant_5_output_0 0 1 /model/model.22/Constant_5_output_0 0=3549 1=2
+Split            splitncnn_2              1 2 /model/model.22/Constant_5_output_0 /model/model.22/Constant_5_output_0_splitncnn_0 /model/model.22/Constant_5_output_0_splitncnn_1
+MemoryData       /model/model.22/Constant_8_output_0 0 1 /model/model.22/Constant_8_output_0 0=3549
+MemoryData       _v_1460                  0 1 _v_1460 0=0
+MemoryData       onnx::Split_1149         0 1 onnx::Split_1149 0=4
+Convolution      /model/model.0/conv/Conv 1 1 images /model/model.0/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=432
+Swish            /model/model.0/act/Mul   1 1 /model/model.0/conv/Conv_output_0 /model/model.0/act/Mul_output_0
+Convolution      /model/model.1/conv/Conv 1 1 /model/model.0/act/Mul_output_0 /model/model.1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=4608
+Swish            /model/model.1/act/Mul   1 1 /model/model.1/conv/Conv_output_0 /model/model.1/act/Mul_output_0
+Convolution      /model/model.2/cv1/conv/Conv 1 1 /model/model.1/act/Mul_output_0 /model/model.2/cv1/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024
+Swish            /model/model.2/cv1/act/Mul 1 1 /model/model.2/cv1/conv/Conv_output_0 /model/model.2/cv1/act/Mul_output_0
+Split            splitncnn_3              1 2 /model/model.2/cv1/act/Mul_output_0 /model/model.2/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.2/Slice     2 1 /model/model.2/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.2/Slice_output_0 -23309=1,0 -23310=1,16 -23311=1,0
+Crop             /model/model.2/Slice_1   2 1 /model/model.2/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.2/Slice_1_output_0 -23309=1,16 -23310=1,32 -23311=1,0
+Split            splitncnn_4              1 2 /model/model.2/Slice_1_output_0 /model/model.2/Slice_1_output_0_splitncnn_0 /model/model.2/Slice_1_output_0_splitncnn_1
+Convolution      /model/model.2/cv2/conv/Conv 1 1 /model/model.2/Slice_1_output_0_splitncnn_1 /model/model.2/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.2/cv2/act/Mul 1 1 /model/model.2/cv2/conv/Conv_output_0 /model/model.2/cv2/act/Mul_output_0
+Split            splitncnn_5              1 2 /model/model.2/cv2/act/Mul_output_0 /model/model.2/cv2/act/Mul_output_0_splitncnn_0 /model/model.2/cv2/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.2/cv3/conv/Conv 1 1 /model/model.2/cv2/act/Mul_output_0_splitncnn_1 /model/model.2/cv3/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.2/cv3/act/Mul 1 1 /model/model.2/cv3/conv/Conv_output_0 /model/model.2/cv3/act/Mul_output_0
+Concat           /model/model.2/Concat    4 1 /model/model.2/Slice_output_0 /model/model.2/Slice_1_output_0_splitncnn_0 /model/model.2/cv2/act/Mul_output_0_splitncnn_0 /model/model.2/cv3/act/Mul_output_0 /model/model.2/Concat_output_0 0=0
+Convolution      /model/model.2/cv4/conv/Conv 1 1 /model/model.2/Concat_output_0 /model/model.2/cv4/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.2/cv4/act/Mul 1 1 /model/model.2/cv4/conv/Conv_output_0 /model/model.2/cv4/act/Mul_output_0
+Pooling          /model/model.3/AveragePool 1 1 /model/model.2/cv4/act/Mul_output_0 /model/model.3/AveragePool_output_0 0=1 1=2 11=2 2=1 12=1 3=0 13=0 14=0 15=0 5=1 6=1
+Convolution      /model/model.3/cv1/conv/Conv 1 1 /model/model.3/AveragePool_output_0 /model/model.3/cv1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=18432
+Swish            /model/model.3/cv1/act/Mul 1 1 /model/model.3/cv1/conv/Conv_output_0 /model/model.3/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv1/conv/Conv 1 1 /model/model.3/cv1/act/Mul_output_0 /model/model.4/cv1/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=4096
+Swish            /model/model.4/cv1/act/Mul 1 1 /model/model.4/cv1/conv/Conv_output_0 /model/model.4/cv1/act/Mul_output_0
+Split            splitncnn_6              1 2 /model/model.4/cv1/act/Mul_output_0 /model/model.4/cv1/act/Mul_output_0_splitncnn_0 /model/model.4/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.4/Slice     2 1 /model/model.4/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.4/Slice_output_0 -23309=1,0 -23310=1,32 -23311=1,0
+Crop             /model/model.4/Slice_1   2 1 /model/model.4/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.4/Slice_1_output_0 -23309=1,32 -23310=1,64 -23311=1,0
+Split            splitncnn_7              1 3 /model/model.4/Slice_1_output_0 /model/model.4/Slice_1_output_0_splitncnn_0 /model/model.4/Slice_1_output_0_splitncnn_1 /model/model.4/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.4/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.4/Slice_1_output_0_splitncnn_2 /model/model.4/cv2/cv2.0/cv1/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.4/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.4/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_8              1 2 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.4/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.4/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.4/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv2/cv2.0/m/m.0/Add 2 1 /model/model.4/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_9              1 2 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.4/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.4/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.4/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv2/cv2.0/m/m.1/Add 2 1 /model/model.4/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_10             1 2 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.4/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.4/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.4/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.4/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.4/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv2/cv2.0/m/m.2/Add 2 1 /model/model.4/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.4/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.4/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.4/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.4/Slice_1_output_0_splitncnn_1 /model/model.4/cv2/cv2.0/cv2/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.4/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.4/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.4/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.4/cv2/cv2.0/Concat 2 1 /model/model.4/cv2/cv2.0/m/m.2/Add_output_0 /model/model.4/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.4/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.4/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.4/cv2/cv2.0/Concat_output_0 /model/model.4/cv2/cv2.0/cv3/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024
+Swish            /model/model.4/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.4/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.4/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.4/cv2/cv2.1/conv/Conv 1 1 /model/model.4/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.4/cv2/cv2.1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.4/cv2/cv2.1/act/Mul 1 1 /model/model.4/cv2/cv2.1/conv/Conv_output_0 /model/model.4/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_11             1 3 /model/model.4/cv2/cv2.1/act/Mul_output_0 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.4/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.4/cv3/cv3.0/cv1/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.4/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.4/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_12             1 2 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.4/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.4/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.4/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv3/cv3.0/m/m.0/Add 2 1 /model/model.4/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_13             1 2 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.4/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.4/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.4/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv3/cv3.0/m/m.1/Add 2 1 /model/model.4/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_14             1 2 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.4/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.4/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.4/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.4/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.4/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.4/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.4/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.4/cv3/cv3.0/m/m.2/Add 2 1 /model/model.4/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.4/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.4/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.4/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.4/cv3/cv3.0/cv2/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.4/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.4/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.4/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.4/cv3/cv3.0/Concat 2 1 /model/model.4/cv3/cv3.0/m/m.2/Add_output_0 /model/model.4/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.4/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.4/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.4/cv3/cv3.0/Concat_output_0 /model/model.4/cv3/cv3.0/cv3/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024
+Swish            /model/model.4/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.4/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.4/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.4/cv3/cv3.1/conv/Conv 1 1 /model/model.4/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.4/cv3/cv3.1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.4/cv3/cv3.1/act/Mul 1 1 /model/model.4/cv3/cv3.1/conv/Conv_output_0 /model/model.4/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.4/Concat    4 1 /model/model.4/Slice_output_0 /model/model.4/Slice_1_output_0_splitncnn_0 /model/model.4/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.4/cv3/cv3.1/act/Mul_output_0 /model/model.4/Concat_output_0 0=0
+Convolution      /model/model.4/cv4/conv/Conv 1 1 /model/model.4/Concat_output_0 /model/model.4/cv4/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=8192
+Swish            /model/model.4/cv4/act/Mul 1 1 /model/model.4/cv4/conv/Conv_output_0 /model/model.4/cv4/act/Mul_output_0
+Split            splitncnn_15             1 2 /model/model.4/cv4/act/Mul_output_0 /model/model.4/cv4/act/Mul_output_0_splitncnn_0 /model/model.4/cv4/act/Mul_output_0_splitncnn_1
+Pooling          /model/model.5/AveragePool 1 1 /model/model.4/cv4/act/Mul_output_0_splitncnn_1 /model/model.5/AveragePool_output_0 0=1 1=2 11=2 2=1 12=1 3=0 13=0 14=0 15=0 5=1 6=1
+Convolution      /model/model.5/cv1/conv/Conv 1 1 /model/model.5/AveragePool_output_0 /model/model.5/cv1/conv/Conv_output_0 0=96 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=55296
+Swish            /model/model.5/cv1/act/Mul 1 1 /model/model.5/cv1/conv/Conv_output_0 /model/model.5/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv1/conv/Conv 1 1 /model/model.5/cv1/act/Mul_output_0 /model/model.6/cv1/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=9216
+Swish            /model/model.6/cv1/act/Mul 1 1 /model/model.6/cv1/conv/Conv_output_0 /model/model.6/cv1/act/Mul_output_0
+Split            splitncnn_16             1 2 /model/model.6/cv1/act/Mul_output_0 /model/model.6/cv1/act/Mul_output_0_splitncnn_0 /model/model.6/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.6/Slice     2 1 /model/model.6/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.6/Slice_output_0 -23309=1,0 -23310=1,48 -23311=1,0
+Crop             /model/model.6/Slice_1   2 1 /model/model.6/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.6/Slice_1_output_0 -23309=1,48 -23310=1,96 -23311=1,0
+Split            splitncnn_17             1 3 /model/model.6/Slice_1_output_0 /model/model.6/Slice_1_output_0_splitncnn_0 /model/model.6/Slice_1_output_0_splitncnn_1 /model/model.6/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.6/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.6/Slice_1_output_0_splitncnn_2 /model/model.6/cv2/cv2.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.6/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.6/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_18             1 2 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.6/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.6/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.6/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv2/cv2.0/m/m.0/Add 2 1 /model/model.6/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_19             1 2 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.6/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.6/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.6/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv2/cv2.0/m/m.1/Add 2 1 /model/model.6/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_20             1 2 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.6/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.6/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.6/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.6/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.6/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv2/cv2.0/m/m.2/Add 2 1 /model/model.6/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.6/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.6/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.6/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.6/Slice_1_output_0_splitncnn_1 /model/model.6/cv2/cv2.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.6/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.6/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.6/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.6/cv2/cv2.0/Concat 2 1 /model/model.6/cv2/cv2.0/m/m.2/Add_output_0 /model/model.6/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.6/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.6/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.6/cv2/cv2.0/Concat_output_0 /model/model.6/cv2/cv2.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.6/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.6/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.6/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.6/cv2/cv2.1/conv/Conv 1 1 /model/model.6/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.6/cv2/cv2.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.6/cv2/cv2.1/act/Mul 1 1 /model/model.6/cv2/cv2.1/conv/Conv_output_0 /model/model.6/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_21             1 3 /model/model.6/cv2/cv2.1/act/Mul_output_0 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.6/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.6/cv3/cv3.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.6/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.6/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_22             1 2 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.6/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.6/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.6/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv3/cv3.0/m/m.0/Add 2 1 /model/model.6/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_23             1 2 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.6/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.6/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.6/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv3/cv3.0/m/m.1/Add 2 1 /model/model.6/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_24             1 2 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.6/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.6/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.6/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.6/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.6/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.6/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.6/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.6/cv3/cv3.0/m/m.2/Add 2 1 /model/model.6/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.6/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.6/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.6/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.6/cv3/cv3.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.6/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.6/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.6/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.6/cv3/cv3.0/Concat 2 1 /model/model.6/cv3/cv3.0/m/m.2/Add_output_0 /model/model.6/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.6/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.6/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.6/cv3/cv3.0/Concat_output_0 /model/model.6/cv3/cv3.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.6/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.6/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.6/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.6/cv3/cv3.1/conv/Conv 1 1 /model/model.6/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.6/cv3/cv3.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.6/cv3/cv3.1/act/Mul 1 1 /model/model.6/cv3/cv3.1/conv/Conv_output_0 /model/model.6/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.6/Concat    4 1 /model/model.6/Slice_output_0 /model/model.6/Slice_1_output_0_splitncnn_0 /model/model.6/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.6/cv3/cv3.1/act/Mul_output_0 /model/model.6/Concat_output_0 0=0
+Convolution      /model/model.6/cv4/conv/Conv 1 1 /model/model.6/Concat_output_0 /model/model.6/cv4/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=18432
+Swish            /model/model.6/cv4/act/Mul 1 1 /model/model.6/cv4/conv/Conv_output_0 /model/model.6/cv4/act/Mul_output_0
+Split            splitncnn_25             1 2 /model/model.6/cv4/act/Mul_output_0 /model/model.6/cv4/act/Mul_output_0_splitncnn_0 /model/model.6/cv4/act/Mul_output_0_splitncnn_1
+Pooling          /model/model.7/AveragePool 1 1 /model/model.6/cv4/act/Mul_output_0_splitncnn_1 /model/model.7/AveragePool_output_0 0=1 1=2 11=2 2=1 12=1 3=0 13=0 14=0 15=0 5=1 6=1
+Convolution      /model/model.7/cv1/conv/Conv 1 1 /model/model.7/AveragePool_output_0 /model/model.7/cv1/conv/Conv_output_0 0=128 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=110592
+Swish            /model/model.7/cv1/act/Mul 1 1 /model/model.7/cv1/conv/Conv_output_0 /model/model.7/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv1/conv/Conv 1 1 /model/model.7/cv1/act/Mul_output_0 /model/model.8/cv1/conv/Conv_output_0 0=128 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=16384
+Swish            /model/model.8/cv1/act/Mul 1 1 /model/model.8/cv1/conv/Conv_output_0 /model/model.8/cv1/act/Mul_output_0
+Split            splitncnn_26             1 2 /model/model.8/cv1/act/Mul_output_0 /model/model.8/cv1/act/Mul_output_0_splitncnn_0 /model/model.8/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.8/Slice     2 1 /model/model.8/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.8/Slice_output_0 -23309=1,0 -23310=1,64 -23311=1,0
+Crop             /model/model.8/Slice_1   2 1 /model/model.8/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.8/Slice_1_output_0 -23309=1,64 -23310=1,128 -23311=1,0
+Split            splitncnn_27             1 3 /model/model.8/Slice_1_output_0 /model/model.8/Slice_1_output_0_splitncnn_0 /model/model.8/Slice_1_output_0_splitncnn_1 /model/model.8/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.8/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.8/Slice_1_output_0_splitncnn_2 /model/model.8/cv2/cv2.0/cv1/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.8/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.8/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_28             1 2 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.8/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.8/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.8/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv2/cv2.0/m/m.0/Add 2 1 /model/model.8/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_29             1 2 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.8/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.8/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.8/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv2/cv2.0/m/m.1/Add 2 1 /model/model.8/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_30             1 2 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.8/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.8/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.8/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.8/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.8/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv2/cv2.0/m/m.2/Add 2 1 /model/model.8/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.8/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.8/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.8/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.8/Slice_1_output_0_splitncnn_1 /model/model.8/cv2/cv2.0/cv2/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.8/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.8/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.8/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.8/cv2/cv2.0/Concat 2 1 /model/model.8/cv2/cv2.0/m/m.2/Add_output_0 /model/model.8/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.8/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.8/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.8/cv2/cv2.0/Concat_output_0 /model/model.8/cv2/cv2.0/cv3/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=4096
+Swish            /model/model.8/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.8/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.8/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.8/cv2/cv2.1/conv/Conv 1 1 /model/model.8/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.8/cv2/cv2.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.8/cv2/cv2.1/act/Mul 1 1 /model/model.8/cv2/cv2.1/conv/Conv_output_0 /model/model.8/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_31             1 3 /model/model.8/cv2/cv2.1/act/Mul_output_0 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.8/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.8/cv3/cv3.0/cv1/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.8/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.8/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_32             1 2 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.8/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.8/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.8/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv3/cv3.0/m/m.0/Add 2 1 /model/model.8/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_33             1 2 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.8/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.8/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.8/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv3/cv3.0/m/m.1/Add 2 1 /model/model.8/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_34             1 2 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.8/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.8/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.8/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.8/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.8/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.8/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.8/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.8/cv3/cv3.0/m/m.2/Add 2 1 /model/model.8/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.8/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.8/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.8/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.8/cv3/cv3.0/cv2/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.8/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.8/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.8/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.8/cv3/cv3.0/Concat 2 1 /model/model.8/cv3/cv3.0/m/m.2/Add_output_0 /model/model.8/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.8/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.8/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.8/cv3/cv3.0/Concat_output_0 /model/model.8/cv3/cv3.0/cv3/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=4096
+Swish            /model/model.8/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.8/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.8/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.8/cv3/cv3.1/conv/Conv 1 1 /model/model.8/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.8/cv3/cv3.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.8/cv3/cv3.1/act/Mul 1 1 /model/model.8/cv3/cv3.1/conv/Conv_output_0 /model/model.8/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.8/Concat    4 1 /model/model.8/Slice_output_0 /model/model.8/Slice_1_output_0_splitncnn_0 /model/model.8/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.8/cv3/cv3.1/act/Mul_output_0 /model/model.8/Concat_output_0 0=0
+Convolution      /model/model.8/cv4/conv/Conv 1 1 /model/model.8/Concat_output_0 /model/model.8/cv4/conv/Conv_output_0 0=128 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=32768
+Swish            /model/model.8/cv4/act/Mul 1 1 /model/model.8/cv4/conv/Conv_output_0 /model/model.8/cv4/act/Mul_output_0
+Convolution      /model/model.9/cv1/conv/Conv 1 1 /model/model.8/cv4/act/Mul_output_0 /model/model.9/cv1/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=8192
+Swish            /model/model.9/cv1/act/Mul 1 1 /model/model.9/cv1/conv/Conv_output_0 /model/model.9/cv1/act/Mul_output_0
+Split            splitncnn_35             1 2 /model/model.9/cv1/act/Mul_output_0 /model/model.9/cv1/act/Mul_output_0_splitncnn_0 /model/model.9/cv1/act/Mul_output_0_splitncnn_1
+Pooling          /model/model.9/cv2/m/MaxPool 1 1 /model/model.9/cv1/act/Mul_output_0_splitncnn_1 /model/model.9/cv2/m/MaxPool_output_0 0=0 1=5 11=5 2=1 12=1 3=2 13=2 14=2 15=2 5=1
+Split            splitncnn_36             1 2 /model/model.9/cv2/m/MaxPool_output_0 /model/model.9/cv2/m/MaxPool_output_0_splitncnn_0 /model/model.9/cv2/m/MaxPool_output_0_splitncnn_1
+Pooling          /model/model.9/cv3/m/MaxPool 1 1 /model/model.9/cv2/m/MaxPool_output_0_splitncnn_1 /model/model.9/cv3/m/MaxPool_output_0 0=0 1=5 11=5 2=1 12=1 3=2 13=2 14=2 15=2 5=1
+Split            splitncnn_37             1 2 /model/model.9/cv3/m/MaxPool_output_0 /model/model.9/cv3/m/MaxPool_output_0_splitncnn_0 /model/model.9/cv3/m/MaxPool_output_0_splitncnn_1
+Pooling          /model/model.9/cv4/m/MaxPool 1 1 /model/model.9/cv3/m/MaxPool_output_0_splitncnn_1 /model/model.9/cv4/m/MaxPool_output_0 0=0 1=5 11=5 2=1 12=1 3=2 13=2 14=2 15=2 5=1
+Concat           /model/model.9/Concat    4 1 /model/model.9/cv1/act/Mul_output_0_splitncnn_0 /model/model.9/cv2/m/MaxPool_output_0_splitncnn_0 /model/model.9/cv3/m/MaxPool_output_0_splitncnn_0 /model/model.9/cv4/m/MaxPool_output_0 /model/model.9/Concat_output_0 0=0
+Convolution      /model/model.9/cv5/conv/Conv 1 1 /model/model.9/Concat_output_0 /model/model.9/cv5/conv/Conv_output_0 0=128 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=32768
+Swish            /model/model.9/cv5/act/Mul 1 1 /model/model.9/cv5/conv/Conv_output_0 /model/model.9/cv5/act/Mul_output_0
+Split            splitncnn_38             1 2 /model/model.9/cv5/act/Mul_output_0 /model/model.9/cv5/act/Mul_output_0_splitncnn_0 /model/model.9/cv5/act/Mul_output_0_splitncnn_1
+Interp           /model/model.10/Resize   1 1 /model/model.9/cv5/act/Mul_output_0_splitncnn_1 /model/model.10/Resize_output_0 0=1 1=2.000000e+00 2=2.000000e+00 3=0 4=0 6=0
+Concat           /model/model.11/Concat   2 1 /model/model.10/Resize_output_0 /model/model.6/cv4/act/Mul_output_0_splitncnn_0 /model/model.11/Concat_output_0 0=0
+Convolution      /model/model.12/cv1/conv/Conv 1 1 /model/model.11/Concat_output_0 /model/model.12/cv1/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=21504
+Swish            /model/model.12/cv1/act/Mul 1 1 /model/model.12/cv1/conv/Conv_output_0 /model/model.12/cv1/act/Mul_output_0
+Split            splitncnn_39             1 2 /model/model.12/cv1/act/Mul_output_0 /model/model.12/cv1/act/Mul_output_0_splitncnn_0 /model/model.12/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.12/Slice    2 1 /model/model.12/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.12/Slice_output_0 -23309=1,0 -23310=1,48 -23311=1,0
+Crop             /model/model.12/Slice_1  2 1 /model/model.12/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.12/Slice_1_output_0 -23309=1,48 -23310=1,96 -23311=1,0
+Split            splitncnn_40             1 3 /model/model.12/Slice_1_output_0 /model/model.12/Slice_1_output_0_splitncnn_0 /model/model.12/Slice_1_output_0_splitncnn_1 /model/model.12/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.12/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.12/Slice_1_output_0_splitncnn_2 /model/model.12/cv2/cv2.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.12/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.12/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_41             1 2 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.12/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.12/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.12/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv2/cv2.0/m/m.0/Add 2 1 /model/model.12/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_42             1 2 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.12/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.12/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.12/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv2/cv2.0/m/m.1/Add 2 1 /model/model.12/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_43             1 2 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.12/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.12/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.12/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.12/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.12/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv2/cv2.0/m/m.2/Add 2 1 /model/model.12/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.12/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.12/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.12/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.12/Slice_1_output_0_splitncnn_1 /model/model.12/cv2/cv2.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.12/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.12/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.12/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.12/cv2/cv2.0/Concat 2 1 /model/model.12/cv2/cv2.0/m/m.2/Add_output_0 /model/model.12/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.12/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.12/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.12/cv2/cv2.0/Concat_output_0 /model/model.12/cv2/cv2.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.12/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.12/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.12/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.12/cv2/cv2.1/conv/Conv 1 1 /model/model.12/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.12/cv2/cv2.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.12/cv2/cv2.1/act/Mul 1 1 /model/model.12/cv2/cv2.1/conv/Conv_output_0 /model/model.12/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_44             1 3 /model/model.12/cv2/cv2.1/act/Mul_output_0 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.12/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.12/cv3/cv3.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.12/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.12/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_45             1 2 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.12/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.12/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.12/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv3/cv3.0/m/m.0/Add 2 1 /model/model.12/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_46             1 2 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.12/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.12/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.12/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv3/cv3.0/m/m.1/Add 2 1 /model/model.12/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_47             1 2 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.12/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.12/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.12/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.12/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.12/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.12/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.12/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.12/cv3/cv3.0/m/m.2/Add 2 1 /model/model.12/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.12/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.12/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.12/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.12/cv3/cv3.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.12/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.12/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.12/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.12/cv3/cv3.0/Concat 2 1 /model/model.12/cv3/cv3.0/m/m.2/Add_output_0 /model/model.12/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.12/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.12/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.12/cv3/cv3.0/Concat_output_0 /model/model.12/cv3/cv3.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.12/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.12/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.12/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.12/cv3/cv3.1/conv/Conv 1 1 /model/model.12/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.12/cv3/cv3.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.12/cv3/cv3.1/act/Mul 1 1 /model/model.12/cv3/cv3.1/conv/Conv_output_0 /model/model.12/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.12/Concat   4 1 /model/model.12/Slice_output_0 /model/model.12/Slice_1_output_0_splitncnn_0 /model/model.12/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.12/cv3/cv3.1/act/Mul_output_0 /model/model.12/Concat_output_0 0=0
+Convolution      /model/model.12/cv4/conv/Conv 1 1 /model/model.12/Concat_output_0 /model/model.12/cv4/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=18432
+Swish            /model/model.12/cv4/act/Mul 1 1 /model/model.12/cv4/conv/Conv_output_0 /model/model.12/cv4/act/Mul_output_0
+Split            splitncnn_48             1 2 /model/model.12/cv4/act/Mul_output_0 /model/model.12/cv4/act/Mul_output_0_splitncnn_0 /model/model.12/cv4/act/Mul_output_0_splitncnn_1
+Interp           /model/model.13/Resize   1 1 /model/model.12/cv4/act/Mul_output_0_splitncnn_1 /model/model.13/Resize_output_0 0=1 1=2.000000e+00 2=2.000000e+00 3=0 4=0 6=0
+Concat           /model/model.14/Concat   2 1 /model/model.13/Resize_output_0 /model/model.4/cv4/act/Mul_output_0_splitncnn_0 /model/model.14/Concat_output_0 0=0
+Convolution      /model/model.15/cv1/conv/Conv 1 1 /model/model.14/Concat_output_0 /model/model.15/cv1/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=10240
+Swish            /model/model.15/cv1/act/Mul 1 1 /model/model.15/cv1/conv/Conv_output_0 /model/model.15/cv1/act/Mul_output_0
+Split            splitncnn_49             1 2 /model/model.15/cv1/act/Mul_output_0 /model/model.15/cv1/act/Mul_output_0_splitncnn_0 /model/model.15/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.15/Slice    2 1 /model/model.15/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.15/Slice_output_0 -23309=1,0 -23310=1,32 -23311=1,0
+Crop             /model/model.15/Slice_1  2 1 /model/model.15/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.15/Slice_1_output_0 -23309=1,32 -23310=1,64 -23311=1,0
+Split            splitncnn_50             1 3 /model/model.15/Slice_1_output_0 /model/model.15/Slice_1_output_0_splitncnn_0 /model/model.15/Slice_1_output_0_splitncnn_1 /model/model.15/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.15/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.15/Slice_1_output_0_splitncnn_2 /model/model.15/cv2/cv2.0/cv1/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.15/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.15/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_51             1 2 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.15/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.15/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.15/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv2/cv2.0/m/m.0/Add 2 1 /model/model.15/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_52             1 2 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.15/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.15/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.15/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv2/cv2.0/m/m.1/Add 2 1 /model/model.15/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_53             1 2 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.15/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.15/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.15/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.15/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.15/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv2/cv2.0/m/m.2/Add 2 1 /model/model.15/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.15/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.15/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.15/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.15/Slice_1_output_0_splitncnn_1 /model/model.15/cv2/cv2.0/cv2/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.15/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.15/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.15/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.15/cv2/cv2.0/Concat 2 1 /model/model.15/cv2/cv2.0/m/m.2/Add_output_0 /model/model.15/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.15/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.15/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.15/cv2/cv2.0/Concat_output_0 /model/model.15/cv2/cv2.0/cv3/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024
+Swish            /model/model.15/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.15/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.15/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.15/cv2/cv2.1/conv/Conv 1 1 /model/model.15/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.15/cv2/cv2.1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.15/cv2/cv2.1/act/Mul 1 1 /model/model.15/cv2/cv2.1/conv/Conv_output_0 /model/model.15/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_54             1 3 /model/model.15/cv2/cv2.1/act/Mul_output_0 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.15/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.15/cv3/cv3.0/cv1/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.15/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.15/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_55             1 2 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.15/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.15/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.15/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv3/cv3.0/m/m.0/Add 2 1 /model/model.15/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_56             1 2 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.15/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.15/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.15/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv3/cv3.0/m/m.1/Add 2 1 /model/model.15/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_57             1 2 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.15/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.15/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.15/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.15/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=16 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=2304
+Swish            /model/model.15/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.15/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.15/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.15/cv3/cv3.0/m/m.2/Add 2 1 /model/model.15/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.15/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.15/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.15/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.15/cv3/cv3.0/cv2/conv/Conv_output_0 0=16 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=512
+Swish            /model/model.15/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.15/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.15/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.15/cv3/cv3.0/Concat 2 1 /model/model.15/cv3/cv3.0/m/m.2/Add_output_0 /model/model.15/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.15/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.15/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.15/cv3/cv3.0/Concat_output_0 /model/model.15/cv3/cv3.0/cv3/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024
+Swish            /model/model.15/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.15/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.15/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.15/cv3/cv3.1/conv/Conv 1 1 /model/model.15/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.15/cv3/cv3.1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.15/cv3/cv3.1/act/Mul 1 1 /model/model.15/cv3/cv3.1/conv/Conv_output_0 /model/model.15/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.15/Concat   4 1 /model/model.15/Slice_output_0 /model/model.15/Slice_1_output_0_splitncnn_0 /model/model.15/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.15/cv3/cv3.1/act/Mul_output_0 /model/model.15/Concat_output_0 0=0
+Convolution      /model/model.15/cv4/conv/Conv 1 1 /model/model.15/Concat_output_0 /model/model.15/cv4/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=8192
+Swish            /model/model.15/cv4/act/Mul 1 1 /model/model.15/cv4/conv/Conv_output_0 /model/model.15/cv4/act/Mul_output_0
+Split            splitncnn_58             1 3 /model/model.15/cv4/act/Mul_output_0 /model/model.15/cv4/act/Mul_output_0_splitncnn_0 /model/model.15/cv4/act/Mul_output_0_splitncnn_1 /model/model.15/cv4/act/Mul_output_0_splitncnn_2
+Pooling          /model/model.16/AveragePool 1 1 /model/model.15/cv4/act/Mul_output_0_splitncnn_2 /model/model.16/AveragePool_output_0 0=1 1=2 11=2 2=1 12=1 3=0 13=0 14=0 15=0 5=1 6=1
+Convolution      /model/model.16/cv1/conv/Conv 1 1 /model/model.16/AveragePool_output_0 /model/model.16/cv1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=27648
+Swish            /model/model.16/cv1/act/Mul 1 1 /model/model.16/cv1/conv/Conv_output_0 /model/model.16/cv1/act/Mul_output_0
+Concat           /model/model.17/Concat   2 1 /model/model.16/cv1/act/Mul_output_0 /model/model.12/cv4/act/Mul_output_0_splitncnn_0 /model/model.17/Concat_output_0 0=0
+Convolution      /model/model.18/cv1/conv/Conv 1 1 /model/model.17/Concat_output_0 /model/model.18/cv1/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=13824
+Swish            /model/model.18/cv1/act/Mul 1 1 /model/model.18/cv1/conv/Conv_output_0 /model/model.18/cv1/act/Mul_output_0
+Split            splitncnn_59             1 2 /model/model.18/cv1/act/Mul_output_0 /model/model.18/cv1/act/Mul_output_0_splitncnn_0 /model/model.18/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.18/Slice    2 1 /model/model.18/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.18/Slice_output_0 -23309=1,0 -23310=1,48 -23311=1,0
+Crop             /model/model.18/Slice_1  2 1 /model/model.18/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.18/Slice_1_output_0 -23309=1,48 -23310=1,96 -23311=1,0
+Split            splitncnn_60             1 3 /model/model.18/Slice_1_output_0 /model/model.18/Slice_1_output_0_splitncnn_0 /model/model.18/Slice_1_output_0_splitncnn_1 /model/model.18/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.18/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.18/Slice_1_output_0_splitncnn_2 /model/model.18/cv2/cv2.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.18/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.18/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_61             1 2 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.18/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.18/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.18/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv2/cv2.0/m/m.0/Add 2 1 /model/model.18/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_62             1 2 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.18/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.18/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.18/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv2/cv2.0/m/m.1/Add 2 1 /model/model.18/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_63             1 2 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.18/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.18/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.18/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.18/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.18/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv2/cv2.0/m/m.2/Add 2 1 /model/model.18/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.18/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.18/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.18/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.18/Slice_1_output_0_splitncnn_1 /model/model.18/cv2/cv2.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.18/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.18/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.18/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.18/cv2/cv2.0/Concat 2 1 /model/model.18/cv2/cv2.0/m/m.2/Add_output_0 /model/model.18/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.18/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.18/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.18/cv2/cv2.0/Concat_output_0 /model/model.18/cv2/cv2.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.18/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.18/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.18/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.18/cv2/cv2.1/conv/Conv 1 1 /model/model.18/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.18/cv2/cv2.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.18/cv2/cv2.1/act/Mul 1 1 /model/model.18/cv2/cv2.1/conv/Conv_output_0 /model/model.18/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_64             1 3 /model/model.18/cv2/cv2.1/act/Mul_output_0 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.18/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.18/cv3/cv3.0/cv1/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.18/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.18/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_65             1 2 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.18/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.18/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.18/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv3/cv3.0/m/m.0/Add 2 1 /model/model.18/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_66             1 2 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.18/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.18/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.18/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv3/cv3.0/m/m.1/Add 2 1 /model/model.18/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_67             1 2 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.18/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.18/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.18/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.18/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=24 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=5184
+Swish            /model/model.18/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.18/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.18/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.18/cv3/cv3.0/m/m.2/Add 2 1 /model/model.18/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.18/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.18/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.18/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.18/cv3/cv3.0/cv2/conv/Conv_output_0 0=24 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1152
+Swish            /model/model.18/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.18/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.18/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.18/cv3/cv3.0/Concat 2 1 /model/model.18/cv3/cv3.0/m/m.2/Add_output_0 /model/model.18/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.18/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.18/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.18/cv3/cv3.0/Concat_output_0 /model/model.18/cv3/cv3.0/cv3/conv/Conv_output_0 0=48 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2304
+Swish            /model/model.18/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.18/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.18/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.18/cv3/cv3.1/conv/Conv 1 1 /model/model.18/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.18/cv3/cv3.1/conv/Conv_output_0 0=48 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=20736
+Swish            /model/model.18/cv3/cv3.1/act/Mul 1 1 /model/model.18/cv3/cv3.1/conv/Conv_output_0 /model/model.18/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.18/Concat   4 1 /model/model.18/Slice_output_0 /model/model.18/Slice_1_output_0_splitncnn_0 /model/model.18/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.18/cv3/cv3.1/act/Mul_output_0 /model/model.18/Concat_output_0 0=0
+Convolution      /model/model.18/cv4/conv/Conv 1 1 /model/model.18/Concat_output_0 /model/model.18/cv4/conv/Conv_output_0 0=96 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=18432
+Swish            /model/model.18/cv4/act/Mul 1 1 /model/model.18/cv4/conv/Conv_output_0 /model/model.18/cv4/act/Mul_output_0
+Split            splitncnn_68             1 3 /model/model.18/cv4/act/Mul_output_0 /model/model.18/cv4/act/Mul_output_0_splitncnn_0 /model/model.18/cv4/act/Mul_output_0_splitncnn_1 /model/model.18/cv4/act/Mul_output_0_splitncnn_2
+Pooling          /model/model.19/AveragePool 1 1 /model/model.18/cv4/act/Mul_output_0_splitncnn_2 /model/model.19/AveragePool_output_0 0=1 1=2 11=2 2=1 12=1 3=0 13=0 14=0 15=0 5=1 6=1
+Convolution      /model/model.19/cv1/conv/Conv 1 1 /model/model.19/AveragePool_output_0 /model/model.19/cv1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=55296
+Swish            /model/model.19/cv1/act/Mul 1 1 /model/model.19/cv1/conv/Conv_output_0 /model/model.19/cv1/act/Mul_output_0
+Concat           /model/model.20/Concat   2 1 /model/model.19/cv1/act/Mul_output_0 /model/model.9/cv5/act/Mul_output_0_splitncnn_0 /model/model.20/Concat_output_0 0=0
+Convolution      /model/model.21/cv1/conv/Conv 1 1 /model/model.20/Concat_output_0 /model/model.21/cv1/conv/Conv_output_0 0=128 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=24576
+Swish            /model/model.21/cv1/act/Mul 1 1 /model/model.21/cv1/conv/Conv_output_0 /model/model.21/cv1/act/Mul_output_0
+Split            splitncnn_69             1 2 /model/model.21/cv1/act/Mul_output_0 /model/model.21/cv1/act/Mul_output_0_splitncnn_0 /model/model.21/cv1/act/Mul_output_0_splitncnn_1
+Crop             /model/model.21/Slice    2 1 /model/model.21/cv1/act/Mul_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /model/model.21/Slice_output_0 -23309=1,0 -23310=1,64 -23311=1,0
+Crop             /model/model.21/Slice_1  2 1 /model/model.21/cv1/act/Mul_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /model/model.21/Slice_1_output_0 -23309=1,64 -23310=1,128 -23311=1,0
+Split            splitncnn_70             1 3 /model/model.21/Slice_1_output_0 /model/model.21/Slice_1_output_0_splitncnn_0 /model/model.21/Slice_1_output_0_splitncnn_1 /model/model.21/Slice_1_output_0_splitncnn_2
+Convolution      /model/model.21/cv2/cv2.0/cv1/conv/Conv 1 1 /model/model.21/Slice_1_output_0_splitncnn_2 /model/model.21/cv2/cv2.0/cv1/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.21/cv2/cv2.0/cv1/act/Mul 1 1 /model/model.21/cv2/cv2.0/cv1/conv/Conv_output_0 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0
+Split            splitncnn_71             1 2 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.21/cv2/cv2.0/m/m.0/cv1/conv/Conv 1 1 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.21/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.0/cv1/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.0/cv1/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv2/cv2.0/m/m.0/cv2/conv/Conv 1 1 /model/model.21/cv2/cv2.0/m/m.0/cv1/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.0/cv2/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.0/cv2/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv2/cv2.0/m/m.0/Add 2 1 /model/model.21/cv2/cv2.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/m/m.0/cv2/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_72             1 2 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.21/cv2/cv2.0/m/m.1/cv1/conv/Conv 1 1 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_1 /model/model.21/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.1/cv1/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.1/cv1/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv2/cv2.0/m/m.1/cv2/conv/Conv 1 1 /model/model.21/cv2/cv2.0/m/m.1/cv1/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.1/cv2/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.1/cv2/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv2/cv2.0/m/m.1/Add 2 1 /model/model.21/cv2/cv2.0/m/m.0/Add_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/m/m.1/cv2/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_73             1 2 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.21/cv2/cv2.0/m/m.2/cv1/conv/Conv 1 1 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_1 /model/model.21/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.2/cv1/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.2/cv1/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv2/cv2.0/m/m.2/cv2/conv/Conv 1 1 /model/model.21/cv2/cv2.0/m/m.2/cv1/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv2/cv2.0/m/m.2/cv2/act/Mul 1 1 /model/model.21/cv2/cv2.0/m/m.2/cv2/conv/Conv_output_0 /model/model.21/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv2/cv2.0/m/m.2/Add 2 1 /model/model.21/cv2/cv2.0/m/m.1/Add_output_0_splitncnn_0 /model/model.21/cv2/cv2.0/m/m.2/cv2/act/Mul_output_0 /model/model.21/cv2/cv2.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.21/cv2/cv2.0/cv2/conv/Conv 1 1 /model/model.21/Slice_1_output_0_splitncnn_1 /model/model.21/cv2/cv2.0/cv2/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.21/cv2/cv2.0/cv2/act/Mul 1 1 /model/model.21/cv2/cv2.0/cv2/conv/Conv_output_0 /model/model.21/cv2/cv2.0/cv2/act/Mul_output_0
+Concat           /model/model.21/cv2/cv2.0/Concat 2 1 /model/model.21/cv2/cv2.0/m/m.2/Add_output_0 /model/model.21/cv2/cv2.0/cv2/act/Mul_output_0 /model/model.21/cv2/cv2.0/Concat_output_0 0=0
+Convolution      /model/model.21/cv2/cv2.0/cv3/conv/Conv 1 1 /model/model.21/cv2/cv2.0/Concat_output_0 /model/model.21/cv2/cv2.0/cv3/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=4096
+Swish            /model/model.21/cv2/cv2.0/cv3/act/Mul 1 1 /model/model.21/cv2/cv2.0/cv3/conv/Conv_output_0 /model/model.21/cv2/cv2.0/cv3/act/Mul_output_0
+Convolution      /model/model.21/cv2/cv2.1/conv/Conv 1 1 /model/model.21/cv2/cv2.0/cv3/act/Mul_output_0 /model/model.21/cv2/cv2.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.21/cv2/cv2.1/act/Mul 1 1 /model/model.21/cv2/cv2.1/conv/Conv_output_0 /model/model.21/cv2/cv2.1/act/Mul_output_0
+Split            splitncnn_74             1 3 /model/model.21/cv2/cv2.1/act/Mul_output_0 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_2
+Convolution      /model/model.21/cv3/cv3.0/cv1/conv/Conv 1 1 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_2 /model/model.21/cv3/cv3.0/cv1/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.21/cv3/cv3.0/cv1/act/Mul 1 1 /model/model.21/cv3/cv3.0/cv1/conv/Conv_output_0 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0
+Split            splitncnn_75             1 2 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.21/cv3/cv3.0/m/m.0/cv1/conv/Conv 1 1 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_1 /model/model.21/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.0/cv1/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.0/cv1/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv3/cv3.0/m/m.0/cv2/conv/Conv 1 1 /model/model.21/cv3/cv3.0/m/m.0/cv1/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.0/cv2/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.0/cv2/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv3/cv3.0/m/m.0/Add 2 1 /model/model.21/cv3/cv3.0/cv1/act/Mul_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/m/m.0/cv2/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0 0=0
+Split            splitncnn_76             1 2 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1
+Convolution      /model/model.21/cv3/cv3.0/m/m.1/cv1/conv/Conv 1 1 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_1 /model/model.21/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.1/cv1/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.1/cv1/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv3/cv3.0/m/m.1/cv2/conv/Conv 1 1 /model/model.21/cv3/cv3.0/m/m.1/cv1/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.1/cv2/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.1/cv2/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv3/cv3.0/m/m.1/Add 2 1 /model/model.21/cv3/cv3.0/m/m.0/Add_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/m/m.1/cv2/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0 0=0
+Split            splitncnn_77             1 2 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1
+Convolution      /model/model.21/cv3/cv3.0/m/m.2/cv1/conv/Conv 1 1 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_1 /model/model.21/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.2/cv1/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.2/cv1/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0
+Convolution      /model/model.21/cv3/cv3.0/m/m.2/cv2/conv/Conv 1 1 /model/model.21/cv3/cv3.0/m/m.2/cv1/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216
+Swish            /model/model.21/cv3/cv3.0/m/m.2/cv2/act/Mul 1 1 /model/model.21/cv3/cv3.0/m/m.2/cv2/conv/Conv_output_0 /model/model.21/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0
+BinaryOp         /model/model.21/cv3/cv3.0/m/m.2/Add 2 1 /model/model.21/cv3/cv3.0/m/m.1/Add_output_0_splitncnn_0 /model/model.21/cv3/cv3.0/m/m.2/cv2/act/Mul_output_0 /model/model.21/cv3/cv3.0/m/m.2/Add_output_0 0=0
+Convolution      /model/model.21/cv3/cv3.0/cv2/conv/Conv 1 1 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_1 /model/model.21/cv3/cv3.0/cv2/conv/Conv_output_0 0=32 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=2048
+Swish            /model/model.21/cv3/cv3.0/cv2/act/Mul 1 1 /model/model.21/cv3/cv3.0/cv2/conv/Conv_output_0 /model/model.21/cv3/cv3.0/cv2/act/Mul_output_0
+Concat           /model/model.21/cv3/cv3.0/Concat 2 1 /model/model.21/cv3/cv3.0/m/m.2/Add_output_0 /model/model.21/cv3/cv3.0/cv2/act/Mul_output_0 /model/model.21/cv3/cv3.0/Concat_output_0 0=0
+Convolution      /model/model.21/cv3/cv3.0/cv3/conv/Conv 1 1 /model/model.21/cv3/cv3.0/Concat_output_0 /model/model.21/cv3/cv3.0/cv3/conv/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=4096
+Swish            /model/model.21/cv3/cv3.0/cv3/act/Mul 1 1 /model/model.21/cv3/cv3.0/cv3/conv/Conv_output_0 /model/model.21/cv3/cv3.0/cv3/act/Mul_output_0
+Convolution      /model/model.21/cv3/cv3.1/conv/Conv 1 1 /model/model.21/cv3/cv3.0/cv3/act/Mul_output_0 /model/model.21/cv3/cv3.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.21/cv3/cv3.1/act/Mul 1 1 /model/model.21/cv3/cv3.1/conv/Conv_output_0 /model/model.21/cv3/cv3.1/act/Mul_output_0
+Concat           /model/model.21/Concat   4 1 /model/model.21/Slice_output_0 /model/model.21/Slice_1_output_0_splitncnn_0 /model/model.21/cv2/cv2.1/act/Mul_output_0_splitncnn_0 /model/model.21/cv3/cv3.1/act/Mul_output_0 /model/model.21/Concat_output_0 0=0
+Convolution      /model/model.21/cv4/conv/Conv 1 1 /model/model.21/Concat_output_0 /model/model.21/cv4/conv/Conv_output_0 0=128 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=32768
+Swish            /model/model.21/cv4/act/Mul 1 1 /model/model.21/cv4/conv/Conv_output_0 /model/model.21/cv4/act/Mul_output_0
+Split            splitncnn_78             1 2 /model/model.21/cv4/act/Mul_output_0 /model/model.21/cv4/act/Mul_output_0_splitncnn_0 /model/model.21/cv4/act/Mul_output_0_splitncnn_1
+Convolution      /model/model.22/cv2.0/cv2.0.0/conv/Conv 1 1 /model/model.15/cv4/act/Mul_output_0_splitncnn_1 /model/model.22/cv2.0/cv2.0.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.22/cv2.0/cv2.0.0/act/Mul 1 1 /model/model.22/cv2.0/cv2.0.0/conv/Conv_output_0 /model/model.22/cv2.0/cv2.0.0/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.0/cv2.0.1/conv/Conv 1 1 /model/model.22/cv2.0/cv2.0.0/act/Mul_output_0 /model/model.22/cv2.0/cv2.0.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216 7=4
+Swish            /model/model.22/cv2.0/cv2.0.1/act/Mul 1 1 /model/model.22/cv2.0/cv2.0.1/conv/Conv_output_0 /model/model.22/cv2.0/cv2.0.1/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.0/cv2.0.2/Conv 1 1 /model/model.22/cv2.0/cv2.0.1/act/Mul_output_0 /model/model.22/cv2.0/cv2.0.2/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024 7=4
+Convolution      /model/model.22/cv3.0/cv3.0.0/conv/Conv 1 1 /model/model.15/cv4/act/Mul_output_0_splitncnn_0 /model/model.22/cv3.0/cv3.0.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.22/cv3.0/cv3.0.0/act/Mul 1 1 /model/model.22/cv3.0/cv3.0.0/conv/Conv_output_0 /model/model.22/cv3.0/cv3.0.0/act/Mul_output_0
+Convolution      /model/model.22/cv3.0/cv3.0.1/conv/Conv 1 1 /model/model.22/cv3.0/cv3.0.0/act/Mul_output_0 /model/model.22/cv3.0/cv3.0.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.22/cv3.0/cv3.0.1/act/Mul 1 1 /model/model.22/cv3.0/cv3.0.1/conv/Conv_output_0 /model/model.22/cv3.0/cv3.0.1/act/Mul_output_0
+Convolution      /model/model.22/cv3.0/cv3.0.2/Conv 1 1 /model/model.22/cv3.0/cv3.0.1/act/Mul_output_0 /model/model.22/cv3.0/cv3.0.2/Conv_output_0 0=1 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=64
+Concat           /model/model.22/Concat   2 1 /model/model.22/cv2.0/cv2.0.2/Conv_output_0 /model/model.22/cv3.0/cv3.0.2/Conv_output_0 /model/model.22/Concat_output_0 0=0
+Convolution      /model/model.22/cv2.1/cv2.1.0/conv/Conv 1 1 /model/model.18/cv4/act/Mul_output_0_splitncnn_1 /model/model.22/cv2.1/cv2.1.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=55296
+Swish            /model/model.22/cv2.1/cv2.1.0/act/Mul 1 1 /model/model.22/cv2.1/cv2.1.0/conv/Conv_output_0 /model/model.22/cv2.1/cv2.1.0/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.1/cv2.1.1/conv/Conv 1 1 /model/model.22/cv2.1/cv2.1.0/act/Mul_output_0 /model/model.22/cv2.1/cv2.1.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216 7=4
+Swish            /model/model.22/cv2.1/cv2.1.1/act/Mul 1 1 /model/model.22/cv2.1/cv2.1.1/conv/Conv_output_0 /model/model.22/cv2.1/cv2.1.1/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.1/cv2.1.2/Conv 1 1 /model/model.22/cv2.1/cv2.1.1/act/Mul_output_0 /model/model.22/cv2.1/cv2.1.2/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024 7=4
+Convolution      /model/model.22/cv3.1/cv3.1.0/conv/Conv 1 1 /model/model.18/cv4/act/Mul_output_0_splitncnn_0 /model/model.22/cv3.1/cv3.1.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=55296
+Swish            /model/model.22/cv3.1/cv3.1.0/act/Mul 1 1 /model/model.22/cv3.1/cv3.1.0/conv/Conv_output_0 /model/model.22/cv3.1/cv3.1.0/act/Mul_output_0
+Convolution      /model/model.22/cv3.1/cv3.1.1/conv/Conv 1 1 /model/model.22/cv3.1/cv3.1.0/act/Mul_output_0 /model/model.22/cv3.1/cv3.1.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.22/cv3.1/cv3.1.1/act/Mul 1 1 /model/model.22/cv3.1/cv3.1.1/conv/Conv_output_0 /model/model.22/cv3.1/cv3.1.1/act/Mul_output_0
+Convolution      /model/model.22/cv3.1/cv3.1.2/Conv 1 1 /model/model.22/cv3.1/cv3.1.1/act/Mul_output_0 /model/model.22/cv3.1/cv3.1.2/Conv_output_0 0=1 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=64
+Concat           /model/model.22/Concat_1 2 1 /model/model.22/cv2.1/cv2.1.2/Conv_output_0 /model/model.22/cv3.1/cv3.1.2/Conv_output_0 /model/model.22/Concat_1_output_0 0=0
+Convolution      /model/model.22/cv2.2/cv2.2.0/conv/Conv 1 1 /model/model.21/cv4/act/Mul_output_0_splitncnn_1 /model/model.22/cv2.2/cv2.2.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=73728
+Swish            /model/model.22/cv2.2/cv2.2.0/act/Mul 1 1 /model/model.22/cv2.2/cv2.2.0/conv/Conv_output_0 /model/model.22/cv2.2/cv2.2.0/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.2/cv2.2.1/conv/Conv 1 1 /model/model.22/cv2.2/cv2.2.0/act/Mul_output_0 /model/model.22/cv2.2/cv2.2.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=9216 7=4
+Swish            /model/model.22/cv2.2/cv2.2.1/act/Mul 1 1 /model/model.22/cv2.2/cv2.2.1/conv/Conv_output_0 /model/model.22/cv2.2/cv2.2.1/act/Mul_output_0
+ConvolutionDepthWise /model/model.22/cv2.2/cv2.2.2/Conv 1 1 /model/model.22/cv2.2/cv2.2.1/act/Mul_output_0 /model/model.22/cv2.2/cv2.2.2/Conv_output_0 0=64 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=1024 7=4
+Convolution      /model/model.22/cv3.2/cv3.2.0/conv/Conv 1 1 /model/model.21/cv4/act/Mul_output_0_splitncnn_0 /model/model.22/cv3.2/cv3.2.0/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=73728
+Swish            /model/model.22/cv3.2/cv3.2.0/act/Mul 1 1 /model/model.22/cv3.2/cv3.2.0/conv/Conv_output_0 /model/model.22/cv3.2/cv3.2.0/act/Mul_output_0
+Convolution      /model/model.22/cv3.2/cv3.2.1/conv/Conv 1 1 /model/model.22/cv3.2/cv3.2.0/act/Mul_output_0 /model/model.22/cv3.2/cv3.2.1/conv/Conv_output_0 0=64 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=36864
+Swish            /model/model.22/cv3.2/cv3.2.1/act/Mul 1 1 /model/model.22/cv3.2/cv3.2.1/conv/Conv_output_0 /model/model.22/cv3.2/cv3.2.1/act/Mul_output_0
+Convolution      /model/model.22/cv3.2/cv3.2.2/Conv 1 1 /model/model.22/cv3.2/cv3.2.1/act/Mul_output_0 /model/model.22/cv3.2/cv3.2.2/Conv_output_0 0=1 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=1 6=64
+Concat           /model/model.22/Concat_2 2 1 /model/model.22/cv2.2/cv2.2.2/Conv_output_0 /model/model.22/cv3.2/cv3.2.2/Conv_output_0 /model/model.22/Concat_2_output_0 0=0
+Reshape          /model/model.22/Reshape  1 1 /model/model.22/Concat_output_0 /model/model.22/Reshape_output_0 0=-1 1=65
+Reshape          /model/model.22/Reshape_1 1 1 /model/model.22/Concat_1_output_0 /model/model.22/Reshape_1_output_0 0=-1 1=65
+Reshape          /model/model.22/Reshape_2 1 1 /model/model.22/Concat_2_output_0 /model/model.22/Reshape_2_output_0 0=-1 1=65
+Concat           /model/model.22/Concat_3 3 1 /model/model.22/Reshape_output_0 /model/model.22/Reshape_1_output_0 /model/model.22/Reshape_2_output_0 /model/model.22/Concat_3_output_0 0=1
+Slice            /model/model.22/Split    1 2 /model/model.22/Concat_3_output_0 /model/model.22/Split_output_0 /model/model.22/Split_output_1 -23300=2,64,1 1=0
+Reshape          /model/model.22/dfl/Reshape 1 1 /model/model.22/Split_output_0 /model/model.22/dfl/Reshape_output_0 0=3549 1=16 2=4
+Permute          /model/model.22/dfl/Transpose 1 1 /model/model.22/dfl/Reshape_output_0 /model/model.22/dfl/Transpose_output_0 0=2
+Softmax          /model/model.22/dfl/Softmax 1 1 /model/model.22/dfl/Transpose_output_0 /model/model.22/dfl/Softmax_output_0 0=0 1=1
+Convolution      /model/model.22/dfl/conv/Conv 1 1 /model/model.22/dfl/Softmax_output_0 /model/model.22/dfl/conv/Conv_output_0 0=1 1=1 11=1 2=1 12=1 3=1 13=1 4=0 14=0 15=0 16=0 5=0 6=16
+Reshape          /model/model.22/dfl/Reshape_1 1 1 /model/model.22/dfl/conv/Conv_output_0 /model/model.22/dfl/Reshape_1_output_0 0=3549 1=4
+Slice            /model/model.22/Split_1  1 2 /model/model.22/dfl/Reshape_1_output_0 /model/model.22/Split_1_output_0 /model/model.22/Split_1_output_1 -23300=2,2,2 1=0
+BinaryOp         /model/model.22/Sub      2 1 /model/model.22/Constant_5_output_0_splitncnn_1 /model/model.22/Split_1_output_0 /model/model.22/Sub_output_0 0=1
+Split            splitncnn_79             1 2 /model/model.22/Sub_output_0 /model/model.22/Sub_output_0_splitncnn_0 /model/model.22/Sub_output_0_splitncnn_1
+BinaryOp         /model/model.22/Add      2 1 /model/model.22/Constant_5_output_0_splitncnn_0 /model/model.22/Split_1_output_1 /model/model.22/Add_output_0 0=0
+Split            splitncnn_80             1 2 /model/model.22/Add_output_0 /model/model.22/Add_output_0_splitncnn_0 /model/model.22/Add_output_0_splitncnn_1
+BinaryOp         /model/model.22/Add_1    2 1 /model/model.22/Sub_output_0_splitncnn_1 /model/model.22/Add_output_0_splitncnn_1 /model/model.22/Add_1_output_0 0=0
+BinaryOp         /model/model.22/Div      1 1 /model/model.22/Add_1_output_0 /model/model.22/Div_output_0 0=3 1=1 2=2.000000e+00
+BinaryOp         /model/model.22/Sub_1    2 1 /model/model.22/Add_output_0_splitncnn_0 /model/model.22/Sub_output_0_splitncnn_0 /model/model.22/Sub_1_output_0 0=1
+Concat           /model/model.22/Concat_4 2 1 /model/model.22/Div_output_0 /model/model.22/Sub_1_output_0 /model/model.22/Concat_4_output_0 0=0
+BinaryOp         /model/model.22/Mul      2 1 /model/model.22/Concat_4_output_0 /model/model.22/Constant_8_output_0 /model/model.22/Mul_output_0 0=2
+Sigmoid          /model/model.22/Sigmoid  1 1 /model/model.22/Split_output_1 /model/model.22/Sigmoid_output_0
+Concat           /model/model.22/Concat_5 2 1 /model/model.22/Mul_output_0 /model/model.22/Sigmoid_output_0 /model/model.22/Concat_5_output_0 0=0
+Permute          /end2end/Transpose       1 1 /model/model.22/Concat_5_output_0 /end2end/Transpose_output_0 0=1
+Split            splitncnn_81             1 5 /end2end/Transpose_output_0 /end2end/Transpose_output_0_splitncnn_0 /end2end/Transpose_output_0_splitncnn_1 /end2end/Transpose_output_0_splitncnn_2 /end2end/Transpose_output_0_splitncnn_3 /end2end/Transpose_output_0_splitncnn_4
+Crop             /end2end/Slice           4 1 /end2end/Transpose_output_0_splitncnn_4 /model/model.2/Constant_1_output_0 /model/model.2/Constant_4_output_0_splitncnn_1 /model/model.2/Constant_1_output_0 /end2end/Slice_output_0 -23309=1,0 -23310=1,1 -23311=1,1
+Crop             /end2end/Slice_1         5 1 /end2end/Transpose_output_0_splitncnn_3 /model/model.2/Constant_1_output_0 /model/model.2/Constant_4_output_0_splitncnn_0 /model/model.2/Constant_4_output_0_splitncnn_2 /model/model.2/Constant_1_output_0 /end2end/Slice_1_output_0 -23309=1,1 -23310=1,2 -23311=1,1
+Crop             /end2end/Slice_2         4 1 /end2end/Transpose_output_0_splitncnn_2 /model/model.2/Constant_4_output_0_splitncnn_3 /model/model.2/Constant_4_output_0_splitncnn_4 /model/model.2/Constant_1_output_0 /end2end/Slice_2_output_0 -23309=1,2 -23310=1,3 -23311=1,1
+Crop             /end2end/Slice_3         3 1 /end2end/Transpose_output_0_splitncnn_1 /model/model.2/Constant_4_output_0_splitncnn_5 /model/model.2/Constant_1_output_0 /end2end/Slice_3_output_0 -23309=1,3 -23310=1,4 -23311=1,1
+Concat           /end2end/Concat          4 1 /end2end/Slice_output_0 /end2end/Slice_1_output_0 /end2end/Slice_2_output_0 /end2end/Slice_3_output_0 /end2end/Concat_output_0 0=-1
+ExpandDims       /end2end/Unsqueeze       2 1 /end2end/Concat_output_0 /model/model.2/Constant_4_output_0_splitncnn_6 /end2end/Unsqueeze_output_0 -23303=0
+Crop             /end2end/Slice_4         3 1 /end2end/Transpose_output_0_splitncnn_0 /model/model.2/Constant_4_output_0_splitncnn_7 /model/model.2/Constant_1_output_0 /end2end/Slice_4_output_0 -23309=1,4 -23310=1,2147483647 -23311=1,1
+Split            splitncnn_82             1 2 /end2end/Slice_4_output_0 /end2end/Slice_4_output_0_splitncnn_0 /end2end/Slice_4_output_0_splitncnn_1
+InnerProduct     /end2end/MatMul          1 1 /end2end/Unsqueeze_output_0 /end2end/MatMul_output_0 0=4 1=0 2=16
+Reduction        /end2end/ReduceMax       1 1 /end2end/Slice_4_output_0_splitncnn_1 /end2end/ReduceMax_output_0 0=4 1=0 -23303=1,1 4=1 5=1
+Split            splitncnn_83             1 2 /end2end/ReduceMax_output_0 /end2end/ReduceMax_output_0_splitncnn_0 /end2end/ReduceMax_output_0_splitncnn_1
+ArgMax           /end2end/ArgMax          1 1 /end2end/Slice_4_output_0_splitncnn_0 /end2end/ArgMax_output_0
+Split            splitncnn_84             1 2 /end2end/ArgMax_output_0 /end2end/ArgMax_output_0_splitncnn_0 /end2end/ArgMax_output_0_splitncnn_1
+Cast             /end2end/Cast            1 1 /end2end/ArgMax_output_0_splitncnn_1 /end2end/Cast_output_0
+BinaryOp         /end2end/Mul             1 1 /end2end/Cast_output_0 /end2end/Mul_output_0 0=2 1=1 2=4.160000e+02
+Squeeze          /end2end/Squeeze         2 1 /end2end/MatMul_output_0 /model/model.2/Constant_4_output_0_splitncnn_8 /end2end/Squeeze_output_0 0=1 1=1 2=1
+Split            splitncnn_85             1 2 /end2end/Squeeze_output_0 /end2end/Squeeze_output_0_splitncnn_0 /end2end/Squeeze_output_0_splitncnn_1
+BinaryOp         /end2end/Add             2 1 /end2end/Squeeze_output_0_splitncnn_1 /end2end/Mul_output_0 /end2end/Add_output_0 0=0
+Permute          /end2end/Transpose_1     1 1 /end2end/ReduceMax_output_0_splitncnn_1 /end2end/Transpose_1_output_0 0=1
+NonMaxSuppression /end2end/NonMaxSuppression 5 1 /end2end/Add_output_0 /end2end/Transpose_1_output_0 /end2end/Constant_24_output_0 /end2end/Constant_25_output_0 /end2end/Constant_26_output_0 /end2end/NonMaxSuppression_output_0
+Split            splitncnn_86             1 2 /end2end/NonMaxSuppression_output_0 /end2end/NonMaxSuppression_output_0_splitncnn_0 /end2end/NonMaxSuppression_output_0_splitncnn_1
+Crop             /end2end/Gather          1 1 /end2end/NonMaxSuppression_output_0_splitncnn_1 /end2end/Gather_output_0 -23309=1,0 -23310=1,1 -23311=1,1
+Split            splitncnn_87             1 2 /end2end/Gather_output_0 /end2end/Gather_output_0_splitncnn_0 /end2end/Gather_output_0_splitncnn_1
+Crop             /end2end/Gather_1        1 1 /end2end/NonMaxSuppression_output_0_splitncnn_0 /end2end/Gather_1_output_0 -23309=1,2 -23310=1,3 -23311=1,1
+Flatten          /end2end/Flatten         1 1 /end2end/Squeeze_output_0_splitncnn_0 /end2end/Flatten_output_0
+BinaryOp         /end2end/Mul_1           1 1 /end2end/Gather_output_0_splitncnn_1 /end2end/Mul_1_output_0 0=2 1=1 2=3.549000e+03
+BinaryOp         /end2end/Add_1           2 1 /end2end/Gather_1_output_0 /end2end/Mul_1_output_0 /end2end/Add_1_output_0 0=0
+Split            splitncnn_88             1 3 /end2end/Add_1_output_0 /end2end/Add_1_output_0_splitncnn_0 /end2end/Add_1_output_0_splitncnn_1 /end2end/Add_1_output_0_splitncnn_2
+Gather           /end2end/Gather_4        2 1 /end2end/Flatten_output_0 /end2end/Add_1_output_0_splitncnn_2 /end2end/Gather_4_output_0
+Flatten          /end2end/Flatten_1       1 1 /end2end/ArgMax_output_0_splitncnn_0 /end2end/Flatten_1_output_0
+Gather           /end2end/Gather_7        2 1 /end2end/Flatten_1_output_0 /end2end/Add_1_output_0_splitncnn_1 /end2end/Gather_7_output_0
+Cast             /end2end/Cast_1          1 1 /end2end/Gather_7_output_0 /end2end/Cast_1_output_0
+Flatten          /end2end/Flatten_2       1 1 /end2end/ReduceMax_output_0_splitncnn_0 /end2end/Flatten_2_output_0
+Gather           /end2end/Gather_10       2 1 /end2end/Flatten_2_output_0 /end2end/Add_1_output_0_splitncnn_0 /end2end/Gather_10_output_0
+ExpandDims       /end2end/Unsqueeze_1     2 1 /end2end/Gather_output_0_splitncnn_0 /model/model.2/Constant_1_output_0 /end2end/Unsqueeze_1_output_0 -23303=0
+Cast             /end2end/Cast_2          1 1 /end2end/Unsqueeze_1_output_0 /end2end/Cast_2_output_0
+Concat           /end2end/Concat_7        4 1 /end2end/Cast_2_output_0 /end2end/Gather_4_output_0 /end2end/Cast_1_output_0 /end2end/Gather_10_output_0 output0 0=1

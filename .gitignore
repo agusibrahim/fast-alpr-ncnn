@@ -1,0 +1,36 @@
+# Build directories
+build/
+build-*/
+build_linux/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+install/
+
+# Executables
+alpr_ncnn
+alpr_ncnn.exe
+alpr_ncnn.dSYM/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE and Editor settings
+.vscode/
+.idea/
+*.suo
+*.user
+*.userossc
+*.sln
+*.vcxproj
+*.filters
+
+# Logs and Python files
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
