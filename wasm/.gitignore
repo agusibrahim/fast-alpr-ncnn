@@ -1,0 +1,15 @@
+# Local Emscripten SDK and compiler build cache
+emsdk/
+
+# Local Tencent NCNN source clone
+ncnn/
+
+# CMake build directories
+build/
+
+# Dynamic build outputs and models copied for local server serving
+fast_alpr_wasm.js
+fast_alpr_wasm.wasm
+models/
+65f9903cda758.jpg
+20220507_165417.jpg
