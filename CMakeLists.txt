@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE Release)
 if(NOT MSVC)
-    add_compile_options(-O3 -march=native)
+    if(DEFINED ALPR_CPU_ARCH)
+        add_compile_options(-O3 "-march=${ALPR_CPU_ARCH}")
+    else()
+        add_compile_options(-O3 -march=native)
+    endif()
 endif()
 
 # Define local standalone directories

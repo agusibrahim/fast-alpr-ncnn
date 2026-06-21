@@ -25,6 +25,7 @@ jobs:
             target: aarch64-linux-gnu
             binary_name: alpr_ncnn
             suffix: ""
+            cpu_arch: armv8-a
 
           # Windows x86_64
           - os: windows-latest
@@ -49,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Build Tools
-        if: matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential cmake git libgomp1
@@ -60,12 +61,24 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake -DCMAKE_BUILD_TYPE=Release ..
+          cmake_args=(-DCMAKE_BUILD_TYPE=Release)
+          if [ -n "${{ matrix.cpu_arch }}" ]; then
+            cmake_args+=("-DALPR_CPU_ARCH=${{ matrix.cpu_arch }}")
+          fi
+          cmake "${cmake_args[@]}" ..
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             cmake --build . --config Release
           else
             make -j2
           fi
+
+      - name: Test C++ Standalone
+        if: matrix.os != 'windows-latest'
+        shell: bash
+        run: |
+          cd build
+          ./alpr_ncnn ../65f9903cda758.jpg
+          test -s result.jpg
 
       - name: Package Standalone Artifacts
         id: package
@@ -254,4 +267,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./gh-pages-site
-
