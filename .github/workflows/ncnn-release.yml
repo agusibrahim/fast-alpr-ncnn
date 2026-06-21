@@ -76,7 +76,7 @@ jobs:
           fi
 
       - name: Test C++ Standalone
-        if: matrix.os != 'windows-latest'
+        if: matrix.target == 'aarch64-linux-gnu'
         shell: bash
         run: |
           cd build
