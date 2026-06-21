@@ -83,6 +83,27 @@ jobs:
           ./alpr_ncnn ../65f9903cda758.jpg
           test -s result.jpg
 
+          ./alpr_ncnn serve --host 127.0.0.1 --port 18080 >server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:18080/api/health >health.json; then
+              break
+            fi
+            sleep 1
+          done
+          jq -e '.models_loaded == true' health.json
+
+          for request in 1 2; do
+            curl -fsS -F image=@../65f9903cda758.jpg \
+              http://127.0.0.1:18080/api/infer >"response-${request}.json"
+            jq -e '.success == true and (.inference_ms > 0) and (.detections | length == 2)' \
+              "response-${request}.json"
+          done
+
+          test "$(grep -c 'Models loaded once' server.log)" -eq 1
+
       - name: Package Standalone Artifacts
         id: package
         shell: bash

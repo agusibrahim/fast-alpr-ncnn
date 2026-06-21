@@ -65,6 +65,29 @@ make -j$(nproc)
 ./alpr_ncnn ../65f9903cda758.jpg
 ```
 
+### Run as an inference API
+
+The server loads the YOLO and OCR models once at startup and reuses them for every request:
+
+```bash
+cd build
+./alpr_ncnn serve
+```
+
+Open `http://localhost:8080` for the minimal demo page, or call the API directly:
+
+```bash
+curl -F image=@../65f9903cda758.jpg http://localhost:8080/api/infer
+```
+
+The JSON response includes `detections`, `inference_ms`, `total_ms`, and the annotated JPEG as `result_image_base64`. Health and model startup time are available at `GET /api/health`.
+
+Server options:
+
+```bash
+./alpr_ncnn serve --host 0.0.0.0 --port 8080 --models models --web web/index.html
+```
+
 ---
 
 ## 📦 Releases & Prebuilt Binaries

@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.14)
 project(alpr_ncnn CXX)
 
+include(FetchContent)
+
+FetchContent_Declare(
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.48.0
+    GIT_SHALLOW TRUE
+)
+set(HTTPLIB_COMPILE OFF CACHE BOOL "" FORCE)
+set(HTTPLIB_TEST OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(httplib)
+
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -24,6 +36,7 @@ target_include_directories(alpr_ncnn PRIVATE
     .
     "${NCNN_3RDPARTY_DIR}/include"
 )
+target_link_libraries(alpr_ncnn PRIVATE httplib::httplib)
 
 # Link NCNN static library (smart check for system package on Linux vs local fallback on macOS)
 if(NOT APPLE)
@@ -77,4 +90,7 @@ add_custom_command(TARGET alpr_ncnn POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/models"
     "$<TARGET_FILE_DIR:alpr_ncnn>/models"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/web"
+    "$<TARGET_FILE_DIR:alpr_ncnn>/web"
 )

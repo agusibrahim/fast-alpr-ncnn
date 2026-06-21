@@ -4,6 +4,14 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+#include <mutex>
+#include <cstdlib>
+#include <cstdio>
+
+#include "httplib.h"
 
 // Include NCNN headers
 #include "net.h"
@@ -503,342 +511,431 @@ ncnn::Layer* Shape_custom_creator(void* /*userdata*/) {
     return new Shape_custom;
 }
 
+struct InferenceOutput {
+    std::vector<Detection> detections;
+    std::vector<unsigned char> jpeg;
+    int width;
+    int height;
+    double inference_ms;
+    double total_ms;
+};
+
+static double elapsed_ms(const std::chrono::steady_clock::time_point& start,
+                         const std::chrono::steady_clock::time_point& end) {
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000.0;
+}
+
+static std::string join_path(const std::string& base, const std::string& file) {
+    if (base.empty() || base == ".") return file;
+    char last = base[base.size() - 1];
+    return base + ((last == '/' || last == '\\') ? "" : "/") + file;
+}
+
+static bool read_file(const std::string& path, std::vector<unsigned char>& data) {
+    std::ifstream file(path.c_str(), std::ios::binary);
+    if (!file) return false;
+    file.seekg(0, std::ios::end);
+    std::streamoff size = file.tellg();
+    file.seekg(0, std::ios::beg);
+    if (size <= 0) return false;
+    data.resize((size_t)size);
+    file.read((char*)data.data(), size);
+    return file.good() || file.eof();
+}
+
+static void jpeg_write_callback(void* context, void* data, int size) {
+    std::vector<unsigned char>* output = (std::vector<unsigned char>*)context;
+    unsigned char* bytes = (unsigned char*)data;
+    output->insert(output->end(), bytes, bytes + size);
+}
+
+class AlprEngine {
+public:
+    AlprEngine() : loaded_(false), model_load_ms_(0.0) {}
+
+    bool load(const std::string& model_dir, std::string& error) {
+        const std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
+
+        std::cout << "[+] Loading YOLOv9 model..." << std::endl;
+        yolo_net_.opt.use_fp16_storage = false;
+        yolo_net_.opt.use_fp16_arithmetic = false;
+        yolo_net_.opt.use_fp16_packed = false;
+        yolo_net_.register_custom_layer("ArgMax", ArgMax_custom_creator);
+        yolo_net_.register_custom_layer("NonMaxSuppression", NonMaxSuppression_custom_creator);
+        yolo_net_.register_custom_layer("Gather", Gather_custom_creator);
+        if (yolo_net_.load_param(join_path(model_dir, "yolo.param").c_str()) != 0 ||
+            yolo_net_.load_model(join_path(model_dir, "yolo.bin").c_str()) != 0) {
+            error = "Failed to load YOLOv9 model";
+            return false;
+        }
+
+        std::cout << "[+] Loading CCT-XS OCR model..." << std::endl;
+        ocr_net_.opt.use_fp16_packed = false;
+        ocr_net_.opt.use_fp16_storage = false;
+        ocr_net_.opt.use_fp16_arithmetic = false;
+        ocr_net_.register_custom_layer("Shape", Shape_custom_creator);
+        ocr_net_.register_custom_layer("Gather", Gather_custom_creator);
+        if (ocr_net_.load_param(join_path(model_dir, "ocr.param").c_str()) != 0 ||
+            ocr_net_.load_model(join_path(model_dir, "ocr_patched.bin").c_str()) != 0) {
+            error = "Failed to load OCR model";
+            return false;
+        }
+
+        loaded_ = true;
+        model_load_ms_ = elapsed_ms(started, std::chrono::steady_clock::now());
+        std::cout << "[+] Models loaded once in " << std::fixed << std::setprecision(2)
+                  << model_load_ms_ << " ms" << std::endl;
+        return true;
+    }
+
+    bool infer(const unsigned char* encoded, size_t encoded_size, InferenceOutput& output, std::string& error) {
+        std::lock_guard<std::mutex> guard(infer_mutex_);
+        const std::chrono::steady_clock::time_point total_started = std::chrono::steady_clock::now();
+        if (!loaded_) {
+            error = "Models are not loaded";
+            return false;
+        }
+        if (!encoded || encoded_size == 0) {
+            error = "Image is empty";
+            return false;
+        }
+
+        int img_w = 0, img_h = 0, img_c = 0;
+        unsigned char* img_data = stbi_load_from_memory(encoded, (int)encoded_size, &img_w, &img_h, &img_c, 3);
+        if (!img_data) {
+            error = "Unsupported or invalid image";
+            return false;
+        }
+        img_c = 3;
+        const std::chrono::steady_clock::time_point inference_started = std::chrono::steady_clock::now();
+
+        const int target_w = 416;
+        const int target_h = 416;
+        float scale = 1.0f;
+        int pad_x = 0;
+        int pad_y = 0;
+        std::vector<unsigned char> padded_img(target_w * target_h * img_c);
+        letterbox(img_data, img_w, img_h, img_c, padded_img.data(), target_w, target_h, scale, pad_x, pad_y);
+
+        ncnn::Mat yolo_in(target_w, target_h, 3);
+        for (int c = 0; c < 3; ++c) {
+            float* ptr = yolo_in.channel(c);
+            for (int y = 0; y < target_h; ++y) {
+                for (int x = 0; x < target_w; ++x) {
+                    ptr[y * target_w + x] = padded_img[(y * target_w + x) * img_c + c] / 255.0f;
+                }
+            }
+        }
+
+        ncnn::Extractor yolo_ex = yolo_net_.create_extractor();
+        yolo_ex.set_light_mode(false);
+        yolo_ex.input("images", yolo_in);
+        ncnn::Mat nms_out, boxes_out, scores_out;
+        if (yolo_ex.extract("/end2end/NonMaxSuppression_output_0", nms_out) != 0 ||
+            yolo_ex.extract("/end2end/Add_output_0", boxes_out) != 0 ||
+            yolo_ex.extract("/end2end/Transpose_1_output_0", scores_out) != 0) {
+            stbi_image_free(img_data);
+            error = "Failed to extract detector output";
+            return false;
+        }
+
+        std::vector<BoundingBox> boxes;
+        const float* scores_ptr = scores_out;
+        for (int i = 0; i < nms_out.h; ++i) {
+            const float* row = nms_out.row(i);
+            int idx = (int)row[2];
+            if (idx < 0 || idx >= boxes_out.h) continue;
+            float score = scores_ptr[idx];
+            if (score < 0.40f) continue;
+
+            const float* source = boxes_out.row(idx);
+            int x1 = (int)std::round((source[0] - pad_x) / scale);
+            int y1 = (int)std::round((source[1] - pad_y) / scale);
+            int x2 = (int)std::round((source[2] - pad_x) / scale);
+            int y2 = (int)std::round((source[3] - pad_y) / scale);
+            int horizontal_pad = (int)std::round((x2 - x1) * 0.08f);
+            x1 -= horizontal_pad;
+            x2 += horizontal_pad;
+
+            BoundingBox box;
+            box.x1 = std::max(0, std::min(x1, img_w - 1));
+            box.y1 = std::max(0, std::min(y1, img_h - 1));
+            box.x2 = std::max(0, std::min(x2, img_w));
+            box.y2 = std::max(0, std::min(y2, img_h));
+            box.score = score;
+            if (box.area() > 0) boxes.push_back(box);
+        }
+
+        output.detections.clear();
+        for (size_t d = 0; d < boxes.size(); ++d) {
+            const BoundingBox& box = boxes[d];
+            int crop_w = 0, crop_h = 0;
+            std::vector<unsigned char> crop = crop_bbox(
+                img_data, img_w, img_h, img_c, box.x1, box.y1, box.x2, box.y2, crop_w, crop_h);
+            const int ocr_w = 128;
+            const int ocr_h = 64;
+            std::vector<unsigned char> resized(ocr_w * ocr_h * img_c);
+            resize_bilinear(crop.data(), crop_w, crop_h, img_c, resized.data(), ocr_w, ocr_h);
+
+            ncnn::Mat ocr_in(3, 128, 64);
+            for (int row = 0; row < 64; ++row) {
+                float* ptr = ocr_in.channel(row);
+                for (int col = 0; col < 128; ++col) {
+                    ptr[col * 3 + 0] = (float)resized[(row * 128 + col) * img_c + 0];
+                    ptr[col * 3 + 1] = (float)resized[(row * 128 + col) * img_c + 1];
+                    ptr[col * 3 + 2] = (float)resized[(row * 128 + col) * img_c + 2];
+                }
+            }
+
+            ncnn::Extractor ocr_ex = ocr_net_.create_extractor();
+            ocr_ex.set_light_mode(false);
+            ocr_ex.input("input", ocr_in);
+            ncnn::Mat ocr_out;
+            if (ocr_ex.extract("plate", ocr_out) != 0) {
+                stbi_image_free(img_data);
+                error = "Failed to extract OCR output";
+                return false;
+            }
+
+            std::string text;
+            std::vector<float> confidences;
+            for (int t = 0; t < ocr_out.h; ++t) {
+                const float* row = ocr_out.row(t);
+                int max_index = -1;
+                float max_probability = -1.0f;
+                for (int c = 0; c < ocr_out.w; ++c) {
+                    if (row[c] > max_probability) {
+                        max_probability = row[c];
+                        max_index = c;
+                    }
+                }
+                if (max_index >= 0 && max_index != BLANK_INDEX && max_index < (int)CHARSET.size()) {
+                    text += CHARSET[max_index];
+                    confidences.push_back(max_probability);
+                }
+            }
+
+            float confidence = 0.0f;
+            for (size_t i = 0; i < confidences.size(); ++i) confidence += confidences[i];
+            if (!confidences.empty()) confidence /= confidences.size();
+
+            Detection detection;
+            detection.bbox = box;
+            detection.text = text;
+            detection.ocr_conf = confidence;
+            output.detections.push_back(detection);
+        }
+
+        output.inference_ms = elapsed_ms(inference_started, std::chrono::steady_clock::now());
+        for (size_t i = 0; i < output.detections.size(); ++i) {
+            draw_box_text(img_data, img_w, img_h, img_c, output.detections[i].bbox, output.detections[i].text);
+        }
+        output.jpeg.clear();
+        if (!stbi_write_jpg_to_func(jpeg_write_callback, &output.jpeg, img_w, img_h, img_c, img_data, 90)) {
+            stbi_image_free(img_data);
+            error = "Failed to encode result image";
+            return false;
+        }
+        stbi_image_free(img_data);
+
+        output.width = img_w;
+        output.height = img_h;
+        output.total_ms = elapsed_ms(total_started, std::chrono::steady_clock::now());
+        return true;
+    }
+
+    bool loaded() const { return loaded_; }
+    double model_load_ms() const { return model_load_ms_; }
+
+private:
+    ncnn::Net yolo_net_;
+    ncnn::Net ocr_net_;
+    bool loaded_;
+    double model_load_ms_;
+    std::mutex infer_mutex_;
+};
+
+static std::string json_escape(const std::string& value) {
+    std::ostringstream out;
+    for (size_t i = 0; i < value.size(); ++i) {
+        unsigned char c = (unsigned char)value[i];
+        switch (c) {
+            case '\\': out << "\\\\"; break;
+            case '"': out << "\\\""; break;
+            case '\n': out << "\\n"; break;
+            case '\r': out << "\\r"; break;
+            case '\t': out << "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)c;
+                } else {
+                    out << value[i];
+                }
+        }
+    }
+    return out.str();
+}
+
+static std::string base64_encode(const std::vector<unsigned char>& data) {
+    static const char table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string output;
+    output.reserve(((data.size() + 2) / 3) * 4);
+    for (size_t i = 0; i < data.size(); i += 3) {
+        unsigned int value = (unsigned int)data[i] << 16;
+        if (i + 1 < data.size()) value |= (unsigned int)data[i + 1] << 8;
+        if (i + 2 < data.size()) value |= data[i + 2];
+        output += table[(value >> 18) & 63];
+        output += table[(value >> 12) & 63];
+        output += (i + 1 < data.size()) ? table[(value >> 6) & 63] : '=';
+        output += (i + 2 < data.size()) ? table[value & 63] : '=';
+    }
+    return output;
+}
+
+static std::string inference_json(const InferenceOutput& output) {
+    std::ostringstream json;
+    json << std::fixed << std::setprecision(2);
+    json << "{\"success\":true,\"inference_ms\":" << output.inference_ms
+         << ",\"total_ms\":" << output.total_ms
+         << ",\"image_width\":" << output.width
+         << ",\"image_height\":" << output.height
+         << ",\"detections\":[";
+    for (size_t i = 0; i < output.detections.size(); ++i) {
+        if (i) json << ',';
+        const Detection& detection = output.detections[i];
+        json << "{\"plate\":\"" << json_escape(detection.text) << "\""
+             << ",\"detection_confidence\":" << detection.bbox.score
+             << ",\"ocr_confidence\":" << detection.ocr_conf
+             << ",\"bbox\":[" << detection.bbox.x1 << ',' << detection.bbox.y1 << ','
+             << detection.bbox.x2 << ',' << detection.bbox.y2 << "]}";
+    }
+    json << "],\"result_image_base64\":\"" << base64_encode(output.jpeg) << "\"}";
+    return json.str();
+}
+
+static int run_server(AlprEngine& engine, const std::string& host, int port, const std::string& web_file) {
+    httplib::Server server;
+    server.set_payload_max_length(15 * 1024 * 1024);
+    server.set_read_timeout(30, 0);
+    server.set_write_timeout(30, 0);
+
+    server.Get("/", [web_file](const httplib::Request&, httplib::Response& response) {
+        std::vector<unsigned char> html;
+        if (!read_file(web_file, html)) {
+            response.status = 404;
+            response.set_content("Demo page not found", "text/plain");
+            return;
+        }
+        response.set_content(std::string((const char*)html.data(), html.size()), "text/html; charset=utf-8");
+    });
+
+    server.Get("/api/health", [&engine](const httplib::Request&, httplib::Response& response) {
+        std::ostringstream json;
+        json << std::fixed << std::setprecision(2)
+             << "{\"status\":\"ok\",\"models_loaded\":" << (engine.loaded() ? "true" : "false")
+             << ",\"model_load_ms\":" << engine.model_load_ms() << "}";
+        response.set_content(json.str(), "application/json");
+    });
+
+    server.Post("/api/infer", [&engine](const httplib::Request& request, httplib::Response& response) {
+        if (!request.form.has_file("image")) {
+            response.status = 400;
+            response.set_content("{\"success\":false,\"error\":\"multipart field 'image' is required\"}", "application/json");
+            return;
+        }
+        const httplib::FormData image = request.form.get_file("image");
+        InferenceOutput output;
+        std::string error;
+        if (!engine.infer((const unsigned char*)image.content.data(), image.content.size(), output, error)) {
+            response.status = 422;
+            response.set_content("{\"success\":false,\"error\":\"" + json_escape(error) + "\"}", "application/json");
+            return;
+        }
+        response.set_content(inference_json(output), "application/json");
+    });
+
+    std::cout << "[+] API listening on http://" << host << ':' << port << std::endl;
+    std::cout << "[+] POST /api/infer (multipart field: image)" << std::endl;
+    return server.listen(host.c_str(), port) ? 0 : 1;
+}
+
+static void print_usage(const char* program) {
+    std::cerr << "Usage:\n"
+              << "  " << program << " <image_path> [--verbose]\n"
+              << "  " << program << " serve [--host 0.0.0.0] [--port 8080] [--models models] [--web web/index.html]\n";
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Usage: " << argv[0] << " <image_path> [--verbose]" << std::endl;
-        return -1;
+        print_usage(argv[0]);
+        return 1;
     }
-    std::string img_path = "";
-    for (int i = 1; i < argc; ++i) {
+
+    const bool serve = std::string(argv[1]) == "serve";
+    std::string image_path;
+    std::string host = "0.0.0.0";
+    std::string model_dir = "models";
+    std::string web_file = "web/index.html";
+    int port = 8080;
+
+    for (int i = serve ? 2 : 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "-v" || arg == "--verbose") {
             g_verbose = true;
-        } else if (img_path.empty()) {
-            img_path = arg;
-        }
-    }
-    if (img_path.empty()) {
-        std::cerr << "Error: No input image path specified." << std::endl;
-        std::cerr << "Usage: " << argv[0] << " <image_path> [--verbose]" << std::endl;
-        return -1;
-    }
-    
-    // 1. Load models
-    std::cout << "[+] Loading YOLOv9 model..." << std::endl;
-    ncnn::Net yolo_net;
-    yolo_net.opt.use_fp16_storage = false;
-    yolo_net.opt.use_fp16_arithmetic = false;
-    yolo_net.opt.use_fp16_packed = false;
-    yolo_net.register_custom_layer("ArgMax", ArgMax_custom_creator);
-    yolo_net.register_custom_layer("NonMaxSuppression", NonMaxSuppression_custom_creator);
-    yolo_net.register_custom_layer("Gather", Gather_custom_creator);
-    if (yolo_net.load_param("models/yolo.param") != 0 ||
-        yolo_net.load_model("models/yolo.bin") != 0) {
-        std::cerr << "[-] Failed to load YOLOv9 model!" << std::endl;
-        return -1;
-    }
-    
-    if (g_verbose) {
-        std::cout << "[DEBUG] YOLOv9 Blobs list:" << std::endl;
-        const std::vector<ncnn::Blob>& blobs = yolo_net.blobs();
-        for (size_t i = 0; i < blobs.size(); i++) {
-            std::cout << "  Blob #" << i << ": name=" << blobs[i].name << " producer=" << blobs[i].producer << std::endl;
-        }
-        
-        std::cout << "[DEBUG] YOLOv9 Layers list:" << std::endl;
-        const std::vector<ncnn::Layer*>& layers = yolo_net.layers();
-        for (size_t i = 0; i < layers.size(); i++) {
-            if (layers[i] == nullptr) {
-                std::cout << "  Layer #" << i << ": NULL!" << std::endl;
-            } else {
-                std::cout << "  Layer #" << i << ": name=" << layers[i]->name << " type=" << layers[i]->type << std::endl;
-            }
+        } else if (arg == "--host" && i + 1 < argc) {
+            host = argv[++i];
+        } else if (arg == "--port" && i + 1 < argc) {
+            port = std::atoi(argv[++i]);
+        } else if (arg == "--models" && i + 1 < argc) {
+            model_dir = argv[++i];
+        } else if (arg == "--web" && i + 1 < argc) {
+            web_file = argv[++i];
+        } else if (!serve && image_path.empty()) {
+            image_path = arg;
+        } else {
+            std::cerr << "Unknown argument: " << arg << std::endl;
+            print_usage(argv[0]);
+            return 1;
         }
     }
 
-    std::cout << "[+] Loading CCT-XS OCR model..." << std::endl;
-    ncnn::Net ocr_net;
-    ocr_net.opt.use_fp16_packed = false;
-    ocr_net.opt.use_fp16_storage = false;
-    ocr_net.opt.use_fp16_arithmetic = false;
-    ocr_net.register_custom_layer("Shape", Shape_custom_creator);
-    ocr_net.register_custom_layer("Gather", Gather_custom_creator);
-    if (ocr_net.load_param("models/ocr.param") != 0 ||
-        ocr_net.load_model("models/ocr_patched.bin") != 0) {
-        std::cerr << "[-] Failed to load OCR model!" << std::endl;
-        return -1;
+    AlprEngine engine;
+    std::string error;
+    if (!engine.load(model_dir, error)) {
+        std::cerr << "[-] " << error << std::endl;
+        return 1;
     }
-    
-    // Print constant values using Extractor
-    if (g_verbose) {
-        ncnn::Extractor ex = ocr_net.create_extractor();
-        ex.set_light_mode(false);
-        std::vector<std::string> const_names = {
-            "const_fold_opt__570",
-            "const_fold_opt__573",
-            "const_fold_opt__576",
-            "const_fold_opt__577",
-            "Const__523",
-            "const_ends__415"
-        };
-        for (const auto& name : const_names) {
-            ncnn::Mat out;
-            int err = ex.extract(name.c_str(), out);
-            std::cout << "[DEBUG CONST EXTRACT] " << name << " -> ret=" << err;
-            if (err == 0) {
-                std::cout << " shape=(" << out.w << "," << out.h << "," << out.c << ") values=[";
-                for (int k = 0; k < out.total(); ++k) {
-                    std::cout << " " << out[k];
-                }
-                std::cout << " ]";
-            }
-            std::cout << std::endl;
+
+    if (serve) {
+        if (port < 1 || port > 65535) {
+            std::cerr << "Invalid port" << std::endl;
+            return 1;
         }
+        return run_server(engine, host, port, web_file);
     }
-    
-    // 2. Load image
-    std::cout << "[+] Loading image: " << img_path << std::endl;
-    int img_w, img_h, img_c;
-    unsigned char* img_data = stbi_load(img_path.c_str(), &img_w, &img_h, &img_c, 3); // force 3 channels (RGB)
-    if (!img_data) {
-        std::cerr << "[-] Failed to load image: " << img_path << std::endl;
-        return -1;
+
+    std::vector<unsigned char> image;
+    if (image_path.empty() || !read_file(image_path, image)) {
+        std::cerr << "[-] Failed to read image: " << image_path << std::endl;
+        return 1;
     }
-    img_c = 3;
-    std::cout << "[+] Image dimensions: " << img_w << "x" << img_h << std::endl;
-    
-    // 3. Preprocess for YOLOv9 (416x416 letterbox, float32, normalized to [0,1])
-    std::cout << "[+] Preprocessing for YOLOv9..." << std::endl;
-    int target_w = 416;
-    int target_h = 416;
-    float scale = 1.0f;
-    int pad_x = 0;
-    int pad_y = 0;
-    
-    std::vector<unsigned char> padded_img(target_w * target_h * img_c);
-    letterbox(img_data, img_w, img_h, img_c, padded_img.data(), target_w, target_h, scale, pad_x, pad_y);
-    
-    // Create NCNN Mat (NCHW format, normalized [0, 1])
-    ncnn::Mat yolo_in(target_w, target_h, 3);
-    for (int c = 0; c < 3; ++c) {
-        float* ptr = yolo_in.channel(c);
-        for (int y = 0; y < target_h; ++y) {
-            for (int x = 0; x < target_w; ++x) {
-                ptr[y * target_w + x] = padded_img[(y * target_w + x) * img_c + c] / 255.0f;
-            }
-        }
+
+    InferenceOutput output;
+    if (!engine.infer(image.data(), image.size(), output, error)) {
+        std::cerr << "[-] " << error << std::endl;
+        return 1;
     }
-    
-    // 4. Run YOLOv9 inference
-    ncnn::Extractor yolo_ex = yolo_net.create_extractor();
-    yolo_ex.set_light_mode(false);
-    yolo_ex.input("images", yolo_in);
-    
-    ncnn::Mat nms_out;
-    ncnn::Mat boxes_out;
-    ncnn::Mat scores_out;
-    if (yolo_ex.extract("/end2end/NonMaxSuppression_output_0", nms_out) != 0) {
-        std::cerr << "[-] Failed to extract NMS output!" << std::endl;
-        return -1;
+
+    std::ofstream result("result.jpg", std::ios::binary);
+    result.write((const char*)output.jpeg.data(), output.jpeg.size());
+    std::cout << "[+] Found " << output.detections.size() << " license plate(s)" << std::endl;
+    for (size_t i = 0; i < output.detections.size(); ++i) {
+        const Detection& detection = output.detections[i];
+        std::cout << i + 1 << ". " << detection.text
+                  << " | detection=" << std::fixed << std::setprecision(2) << detection.bbox.score
+                  << " | ocr=" << detection.ocr_conf << std::endl;
     }
-    if (yolo_ex.extract("/end2end/Add_output_0", boxes_out) != 0) {
-        std::cerr << "[-] Failed to extract candidate boxes!" << std::endl;
-        return -1;
-    }
-    if (yolo_ex.extract("/end2end/Transpose_1_output_0", scores_out) != 0) {
-        std::cerr << "[-] Failed to extract scores!" << std::endl;
-        return -1;
-    }
-    
-    if (g_verbose) {
-        std::cout << "[DEBUG] NMS output shape: w=" << nms_out.w << " h=" << nms_out.h << " c=" << nms_out.c << " dims=" << nms_out.dims << std::endl;
-    }
-    
-    // 5. Parse YOLOv9 detections using NMS selected indices
-    std::vector<BoundingBox> kept_detections;
-    float confidence_threshold = 0.40f;
-    const float* scores_ptr = scores_out;
-    if (g_verbose) {
-        std::cout << "[DEBUG main] scores_out dims=" << scores_out.dims << " w=" << scores_out.w << " h=" << scores_out.h << " c=" << scores_out.c << std::endl;
-    }
-    
-    for (int i = 0; i < nms_out.h; ++i) {
-        const float* row = nms_out.row(i);
-        // row[0] = batch_index (0)
-        // row[1] = class_index (0)
-        // row[2] = index of candidate
-        int idx = (int)row[2];
-        if (idx < 0 || idx >= boxes_out.h) {
-            std::cerr << "[WARNING] NMS candidate index " << idx << " out of bounds [0, " << boxes_out.h << ")" << std::endl;
-            continue;
-        }
-        
-        float score = scores_ptr[idx];
-        if (g_verbose) {
-            std::cout << "[DEBUG main] candidate " << i << " (idx=" << idx << ") score=" << score << std::endl;
-        }
-        if (score < confidence_threshold) continue;
-        
-        const float* box_row = boxes_out.row(idx);
-        float pad_x1 = box_row[0];
-        float pad_y1 = box_row[1];
-        float pad_x2 = box_row[2];
-        float pad_y2 = box_row[3];
-        
-        // Remove padding and scale back to original image coordinates
-        int x1 = (int)std::round((pad_x1 - pad_x) / scale);
-        int y1 = (int)std::round((pad_y1 - pad_y) / scale);
-        int x2 = (int)std::round((pad_x2 - pad_x) / scale);
-        int y2 = (int)std::round((pad_y2 - pad_y) / scale);
-        
-        // Widen left and right by 8% of the bounding box width
-        int bbox_w = x2 - x1;
-        int pad_val = (int)std::round(bbox_w * 0.08f);
-        x1 -= pad_val;
-        x2 += pad_val;
-        
-        BoundingBox bbox;
-        bbox.x1 = std::max(0, std::min(x1, img_w - 1));
-        bbox.y1 = std::max(0, std::min(y1, img_h - 1));
-        bbox.x2 = std::max(0, std::min(x2, img_w));
-        bbox.y2 = std::max(0, std::min(y2, img_h));
-        bbox.score = score;
-        
-        if (g_verbose) {
-            std::cout << "  [BBOX] pad_box=[" << pad_x1 << ", " << pad_y1 << ", " << pad_x2 << ", " << pad_y2 << "]"
-                      << " scaled_box=[" << x1 << ", " << y1 << ", " << x2 << ", " << y2 << "]"
-                      << " clamped_box=[" << bbox.x1 << ", " << bbox.y1 << ", " << bbox.x2 << ", " << bbox.y2 << "]"
-                      << " area=" << bbox.area() << std::endl;
-        }
-                  
-        if (bbox.area() > 0) {
-            kept_detections.push_back(bbox);
-        }
-    }
-    
-    std::cout << "[+] Found " << kept_detections.size() << " license plate(s)." << std::endl;
-    
-    // 6. Run OCR on each cropped license plate
-    std::vector<Detection> final_results;
-    for (size_t d = 0; d < kept_detections.size(); ++d) {
-        const auto& box = kept_detections[d];
-        std::cout << "\n--- Processing Plate #" << d + 1 << " ---" << std::endl;
-        std::cout << "Location: [" << box.x1 << ", " << box.y1 << ", " << box.x2 << ", " << box.y2 << "], Confidence: " << box.score * 100.0f << "%" << std::endl;
-        
-        // Crop license plate
-        int crop_w, crop_h;
-        std::vector<unsigned char> crop_data = crop_bbox(img_data, img_w, img_h, img_c, box.x1, box.y1, box.x2, box.y2, crop_w, crop_h);
-        
-        // Resize cropped plate to 128x64 (CCT-XS-v2 input size)
-        int ocr_w = 128;
-        int ocr_h = 64;
-        std::vector<unsigned char> resized_crop(ocr_w * ocr_h * img_c);
-        resize_bilinear(crop_data.data(), crop_w, crop_h, img_c, resized_crop.data(), ocr_w, ocr_h);
-        
-        if (g_verbose) {
-            std::cout << "[DEBUG] Saving cropped plate to crop.png..." << std::endl;
-            stbi_write_png("crop.png", ocr_w, ocr_h, img_c, resized_crop.data(), ocr_w * img_c);
-        }
-        
-        // Create NCNN Mat (w=3, h=128, c=64) matching the NHWC format expected by the model
-        // Send RGB directly (matching Rust — NO BGR swap)
-        ncnn::Mat ocr_in(3, 128, 64);
-        for (int c_idx = 0; c_idx < 64; ++c_idx) {
-            float* ptr = ocr_in.channel(c_idx);
-            for (int y_idx = 0; y_idx < 128; ++y_idx) {
-                ptr[y_idx * 3 + 0] = (float)resized_crop[(c_idx * 128 + y_idx) * img_c + 0]; // R
-                ptr[y_idx * 3 + 1] = (float)resized_crop[(c_idx * 128 + y_idx) * img_c + 1]; // G
-                ptr[y_idx * 3 + 2] = (float)resized_crop[(c_idx * 128 + y_idx) * img_c + 2]; // B
-            }
-        }
-        
-        if (g_verbose) {
-            std::cout << "[DEBUG C++] First 5 BGR values of row 0:" << std::endl;
-            const float* ptr_val = ocr_in.channel(0);
-            for (int i = 0; i < 5; ++i) {
-                std::cout << " [" << ptr_val[i * 3 + 0] << " " << ptr_val[i * 3 + 1] << " " << ptr_val[i * 3 + 2] << "]" << std::endl;
-            }
-        }
-        
-        // Run OCR inference
-        ncnn::Extractor ocr_ex = ocr_net.create_extractor();
-        ocr_ex.set_light_mode(false);
-        ocr_ex.input("input", ocr_in);
-        
-        ncnn::Mat ocr_out;
-        int ret = ocr_ex.extract("plate", ocr_out);
-        
-        // Greedy Decoding (no CTC collapsing for multi-head classification)
-        // ocr_out shape is (w=37, h=10, c=1), where w is num_classes (37) and h is seq_len (10)
-        std::string ocr_text = "";
-        std::vector<float> ocr_scores;
-        
-        for (int t = 0; t < ocr_out.h; ++t) {
-            const float* row = ocr_out.row(t);
-            int max_index = -1;
-            float max_prob = -1.0f;
-            
-            for (int c = 0; c < ocr_out.w; ++c) {
-                if (row[c] > max_prob) {
-                    max_prob = row[c];
-                    max_index = c;
-                }
-            }
-            
-            if (g_verbose) {
-                std::cout << "  t=" << t << ": argmax=" << max_index << " value=" << max_prob 
-                          << " (char=" << (max_index < (int)CHARSET.size() ? std::string(1, CHARSET[max_index]) : "<BLANK>") << ")" << std::endl;
-             }
-            
-            // Only skip blank characters
-            if (max_index != BLANK_INDEX) {
-                if (max_index < (int)CHARSET.size()) {
-                    ocr_text += CHARSET[max_index];
-                    ocr_scores.push_back(max_prob);
-                }
-            }
-        }
-        
-        float avg_ocr_conf = 0.0f;
-        if (!ocr_scores.empty()) {
-            float sum = 0.0f;
-            for (float s : ocr_scores) sum += s;
-            avg_ocr_conf = sum / ocr_scores.size();
-        }
-        
-        std::cout << "OCR Result: \"" << ocr_text << "\" (Avg Confidence: " << avg_ocr_conf * 100.0f << "%)" << std::endl;
-        
-        Detection result;
-        result.bbox = box;
-        result.text = ocr_text;
-        result.ocr_conf = avg_ocr_conf;
-        final_results.push_back(result);
-    }
-    
-    // 7. Render outputs on the original image and save
-    if (!final_results.empty()) {
-        std::cout << "\n[+] Drawing results on image..." << std::endl;
-        for (const auto& res : final_results) {
-            draw_box_text(img_data, img_w, img_h, img_c, res.bbox, res.text);
-        }
-        
-        std::string out_path = "result.jpg";
-        std::cout << "[+] Saving result to: " << out_path << std::endl;
-        if (stbi_write_jpg(out_path.c_str(), img_w, img_h, img_c, img_data, 90) == 0) {
-            std::cerr << "[-] Failed to save result image!" << std::endl;
-        }
-    }
-    
-    // Clean up memory
-    stbi_image_free(img_data);
-    
-    std::cout << "\n=== Summary Detections ===" << std::endl;
-    for (size_t i = 0; i < final_results.size(); ++i) {
-        const auto& res = final_results[i];
-        std::cout << i + 1 << ". Bbox: [" << res.bbox.x1 << ", " << res.bbox.y1 << ", " << res.bbox.x2 << ", " << res.bbox.y2 
-                  << "] | Score: " << std::fixed << std::setprecision(2) << res.bbox.score 
-                  << " | Plate: \"" << res.text << "\" (OCR Conf: " << res.ocr_conf << ")" << std::endl;
-    }
-    
+    std::cout << "[+] Inference: " << output.inference_ms << " ms | Total: " << output.total_ms << " ms" << std::endl;
+    std::cout << "[+] Saved result.jpg" << std::endl;
     return 0;
 }

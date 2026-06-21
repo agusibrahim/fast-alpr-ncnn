@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Fast ALPR Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 15px/1.5 system-ui, sans-serif; color: #172033; background: #f4f6f8; }
+    main { width: min(760px, calc(100% - 32px)); margin: 48px auto; }
+    h1 { margin: 0 0 6px; font-size: 28px; }
+    p { margin: 0 0 24px; color: #667085; }
+    form, section { padding: 20px; margin-bottom: 16px; background: white; border: 1px solid #dfe3e8; border-radius: 10px; }
+    form { display: flex; gap: 12px; align-items: center; }
+    input { min-width: 0; flex: 1; }
+    button { padding: 10px 16px; border: 0; border-radius: 7px; color: white; background: #2357d8; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #result { display: none; }
+    #output { display: block; width: 100%; height: auto; border-radius: 6px; }
+    .metrics { display: flex; gap: 20px; margin: 16px 0; }
+    .metric strong { display: block; font-size: 22px; }
+    .metric span { color: #667085; font-size: 13px; }
+    ul { margin: 0; padding-left: 20px; }
+    #status { min-height: 24px; color: #667085; }
+    .error { color: #b42318 !important; }
+    @media (max-width: 560px) { form { align-items: stretch; flex-direction: column; } input, button { width: 100%; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Fast ALPR</h1>
+    <p>Upload gambar kendaraan untuk mendeteksi dan membaca plat nomor.</p>
+
+    <form id="form">
+      <input id="image" name="image" type="file" accept="image/*" required>
+      <button id="submit" type="submit">Jalankan inference</button>
+    </form>
+    <div id="status">Model siap.</div>
+
+    <section id="result">
+      <img id="output" alt="Hasil deteksi plat nomor">
+      <div class="metrics">
+        <div class="metric"><strong id="inference">—</strong><span>Inference</span></div>
+        <div class="metric"><strong id="total">—</strong><span>Total proses</span></div>
+      </div>
+      <ul id="detections"></ul>
+    </section>
+  </main>
+
+  <script>
+    const form = document.querySelector('#form');
+    const input = document.querySelector('#image');
+    const button = document.querySelector('#submit');
+    const status = document.querySelector('#status');
+    const result = document.querySelector('#result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!input.files[0]) return;
+      button.disabled = true;
+      status.className = '';
+      status.textContent = 'Memproses gambar…';
+
+      const body = new FormData();
+      body.append('image', input.files[0]);
+      try {
+        const response = await fetch('/api/infer', { method: 'POST', body });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.error || 'Inference gagal');
+
+        document.querySelector('#output').src = `data:image/jpeg;base64,${data.result_image_base64}`;
+        document.querySelector('#inference').textContent = `${data.inference_ms.toFixed(2)} ms`;
+        document.querySelector('#total').textContent = `${data.total_ms.toFixed(2)} ms`;
+        const list = document.querySelector('#detections');
+        list.replaceChildren(...data.detections.map((item) => {
+          const row = document.createElement('li');
+          row.textContent = `${item.plate} — OCR ${(item.ocr_confidence * 100).toFixed(1)}%`;
+          return row;
+        }));
+        if (!data.detections.length) {
+          const row = document.createElement('li');
+          row.textContent = 'Tidak ada plat terdeteksi.';
+          list.append(row);
+        }
+        result.style.display = 'block';
+        status.textContent = `${data.detections.length} plat terdeteksi.`;
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
