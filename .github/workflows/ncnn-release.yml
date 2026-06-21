@@ -61,7 +61,10 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake_args=(-DCMAKE_BUILD_TYPE=Release)
+          cmake_args=(
+            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          )
           if [ -n "${{ matrix.cpu_arch }}" ]; then
             cmake_args+=("-DALPR_CPU_ARCH=${{ matrix.cpu_arch }}")
           fi
