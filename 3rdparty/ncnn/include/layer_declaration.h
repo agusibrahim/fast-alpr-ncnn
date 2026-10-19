@@ -42,8 +42,6 @@ namespace ncnn { DEFINE_LAYER_CREATOR(Eltwise) }
 namespace ncnn { DEFINE_LAYER_CREATOR(Eltwise_arm) }
 #include "layer/elu.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(ELU) }
-#include "layer/arm/elu_arm.h"
-namespace ncnn { DEFINE_LAYER_CREATOR(ELU_arm) }
 #include "layer/embed.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(Embed) }
 #include "layer/exp.h"
@@ -304,8 +302,6 @@ namespace ncnn { DEFINE_LAYER_CREATOR(CumulativeSum) }
 namespace ncnn { DEFINE_LAYER_CREATOR(CopyTo) }
 #include "layer/erf.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(Erf) }
-#include "layer/arm/erf_arm.h"
-namespace ncnn { DEFINE_LAYER_CREATOR(Erf_arm) }
 #include "layer/diag.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(Diag) }
 #include "layer/celu.h"
@@ -324,10 +320,6 @@ namespace ncnn { DEFINE_LAYER_CREATOR(InverseSpectrogram) }
 namespace ncnn { DEFINE_LAYER_CREATOR(Flip) }
 #include "layer/sdpa.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(SDPA) }
-#include "layer/arm/sdpa_arm.h"
-namespace ncnn { DEFINE_LAYER_CREATOR(SDPA_arm) }
 #include "layer/rotaryembed.h"
 namespace ncnn { DEFINE_LAYER_CREATOR(RotaryEmbed) }
-#include "layer/arm/rotaryembed_arm.h"
-namespace ncnn { DEFINE_LAYER_CREATOR(RotaryEmbed_arm) }
 

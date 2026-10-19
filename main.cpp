@@ -16,8 +16,26 @@
 // Include NCNN headers
 #include "net.h"
 #include "mat.h"
+#include "cpu.h"
+#include "allocator.h"
 
-// Include stb image headers
+#if defined(__APPLE__) || defined(__linux__)
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#endif
+#if defined(__APPLE__)
+#include <sys/sysctl.h>
+#include <pthread/qos.h>
+#endif
+
+// Include stb image headers with ARM NEON SIMD enabled when available
+#if defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__)
+#ifndef STBI_NEON
+#define STBI_NEON
+#endif
+#endif
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -58,95 +76,134 @@ void save_mat(const ncnn::Mat& m, const std::string& path) {
     }
 }
 
-// Simple Bilinear Resizing
-void resize_bilinear(const unsigned char* src, int src_w, int src_h, int channels,
-                        unsigned char* dst, int dst_w, int dst_h) {
-    for (int y = 0; y < dst_h; ++y) {
-        float src_y = (float)y * (float)src_h / (float)dst_h;
-        int y0 = (int)src_y;
-        int y1 = std::min(y0 + 1, src_h - 1);
-        float dy = src_y - (float)y0;
-        
-        for (int x = 0; x < dst_w; ++x) {
-            float src_x = (float)x * (float)src_w / (float)dst_w;
-            int x0 = (int)src_x;
-            int x1 = std::min(x0 + 1, src_w - 1);
-            float dx = src_x - (float)x0;
-            
-            for (int c = 0; c < channels; ++c) {
-                float p00 = src[(y0 * src_w + x0) * channels + c];
-                float p10 = src[(y0 * src_w + x1) * channels + c];
-                float p01 = src[(y1 * src_w + x0) * channels + c];
-                float p11 = src[(y1 * src_w + x1) * channels + c];
-                
-                float val = (1.0f - dx) * (1.0f - dy) * p00 +
-                            dx * (1.0f - dy) * p10 +
-                            (1.0f - dx) * dy * p01 +
-                            dx * dy * p11;
-                            
-                dst[(y * dst_w + x) * channels + c] = (unsigned char)std::max(0.0f, std::min(val, 255.0f));
-            }
-        }
-    }
-}
-
-// Letterboxing for YOLOv9 input (416x416)
-void letterbox(const unsigned char* src, int src_w, int src_h, int channels,
-               unsigned char* dst, int target_w, int target_h,
-               float& scale, int& pad_x, int& pad_y) {
+// Single-pass fused letterbox + bilinear resize + /255.0f normalization directly into planar ncnn::Mat(416, 416, 3)
+static void letterbox_to_yolo_mat(const unsigned char* src, int src_w, int src_h,
+                                  ncnn::Mat& yolo_in, int target_w, int target_h,
+                                  float& scale, int& pad_x, int& pad_y,
+                                  ncnn::Allocator* allocator = 0) {
     scale = std::min((float)target_w / src_w, (float)target_h / src_h);
     int new_w = (int)std::round(src_w * scale);
     int new_h = (int)std::round(src_h * scale);
-    
+
     pad_x = (target_w - new_w) / 2;
     pad_y = (target_h - new_h) / 2;
-    
-    // Fill background with padding color (114, 114, 114)
-    std::fill(dst, dst + target_w * target_h * channels, 114);
-    
-    // Resize image
-    std::vector<unsigned char> resized(new_w * new_h * channels);
-    resize_bilinear(src, src_w, src_h, channels, resized.data(), new_w, new_h);
-    
-    // Copy resized image to the center of destination
+
+    yolo_in.create(target_w, target_h, 3, sizeof(float), allocator);
+    yolo_in.fill(114.0f / 255.0f);
+
+    std::vector<int> x0_tab(new_w), x1_tab(new_w);
+    std::vector<float> dx_tab(new_w);
+    const float scale_x = (float)src_w / (float)new_w;
+    const float scale_y = (float)src_h / (float)new_h;
+    for (int x = 0; x < new_w; ++x) {
+        float sx = (float)x * scale_x;
+        int x0 = (int)sx;
+        x0_tab[x] = x0 * 3;
+        x1_tab[x] = std::min(x0 + 1, src_w - 1) * 3;
+        dx_tab[x] = sx - (float)x0;
+    }
+
+    float* ch0 = yolo_in.channel(0);
+    float* ch1 = yolo_in.channel(1);
+    float* ch2 = yolo_in.channel(2);
+    const float inv255 = 1.0f / 255.0f;
+
     for (int y = 0; y < new_h; ++y) {
+        float sy = (float)y * scale_y;
+        int y0 = (int)sy;
+        int y1 = std::min(y0 + 1, src_h - 1);
+        float dy = sy - (float)y0;
+        float wy0 = 1.0f - dy;
+        float wy1 = dy;
+
+        const unsigned char* row0 = src + y0 * src_w * 3;
+        const unsigned char* row1 = src + y1 * src_w * 3;
+        int dst_offset = (y + pad_y) * target_w + pad_x;
+        float* d0 = ch0 + dst_offset;
+        float* d1 = ch1 + dst_offset;
+        float* d2 = ch2 + dst_offset;
+
         for (int x = 0; x < new_w; ++x) {
-            for (int c = 0; c < channels; ++c) {
-                int dst_idx = ((y + pad_y) * target_w + (x + pad_x)) * channels + c;
-                int src_idx = (y * new_w + x) * channels + c;
-                dst[dst_idx] = resized[src_idx];
-            }
+            int i0 = x0_tab[x];
+            int i1 = x1_tab[x];
+            float dx = dx_tab[x];
+            float w00 = (1.0f - dx) * wy0;
+            float w10 = dx * wy0;
+            float w01 = (1.0f - dx) * wy1;
+            float w11 = dx * wy1;
+
+            float r = w00 * row0[i0 + 0] + w10 * row0[i1 + 0] + w01 * row1[i0 + 0] + w11 * row1[i1 + 0];
+            float g = w00 * row0[i0 + 1] + w10 * row0[i1 + 1] + w01 * row1[i0 + 1] + w11 * row1[i1 + 1];
+            float b = w00 * row0[i0 + 2] + w10 * row0[i1 + 2] + w01 * row1[i0 + 2] + w11 * row1[i1 + 2];
+
+            d0[x] = (float)((int)r) * inv255;
+            d1[x] = (float)((int)g) * inv255;
+            d2[x] = (float)((int)b) * inv255;
         }
     }
 }
 
-// Crop Bounding Box with Clamping
-std::vector<unsigned char> crop_bbox(const unsigned char* src, int src_w, int src_h, int channels,
-                                     int x1, int y1, int x2, int y2,
-                                     int& crop_w, int& crop_h) {
-    x1 = std::max(0, std::min(x1, src_w - 1));
-    y1 = std::max(0, std::min(y1, src_h - 1));
-    x2 = std::max(0, std::min(x2, src_w));
-    y2 = std::max(0, std::min(y2, src_h));
-    
-    crop_w = x2 - x1;
-    crop_h = y2 - y1;
-    
-    if (crop_w <= 0 || crop_h <= 0) {
-        crop_w = 1;
-        crop_h = 1;
-        return std::vector<unsigned char>(channels, 0);
+// Single-pass fused ROI crop + bilinear resize + /255.0f normalization directly into planar ncnn::Mat(128, 64, 3)
+static void crop_resize_to_ocr_mat(const unsigned char* src, int src_w, int src_h,
+                                   int x1, int y1, int x2, int y2,
+                                   ncnn::Mat& ocr_in,
+                                   ncnn::Allocator* allocator = 0) {
+    const int dst_w = 128;
+    const int dst_h = 64;
+    int crop_w = std::max(1, x2 - x1);
+    int crop_h = std::max(1, y2 - y1);
+
+    ocr_in.create(dst_w, dst_h, 3, sizeof(float), allocator);
+    float* ch0 = ocr_in.channel(0);
+    float* ch1 = ocr_in.channel(1);
+    float* ch2 = ocr_in.channel(2);
+    const float inv255 = 1.0f / 255.0f;
+
+    int x0_tab[128], x1_tab[128];
+    float dx_tab[128];
+    const float scale_x = (float)crop_w / (float)dst_w;
+    const float scale_y = (float)crop_h / (float)dst_h;
+    for (int x = 0; x < dst_w; ++x) {
+        float sx = (float)x * scale_x;
+        int x0 = (int)sx;
+        int x1c = std::min(x0 + 1, crop_w - 1);
+        x0_tab[x] = (x1 + x0) * 3;
+        x1_tab[x] = (x1 + x1c) * 3;
+        dx_tab[x] = sx - (float)x0;
     }
-    
-    std::vector<unsigned char> crop_data(crop_w * crop_h * channels);
-    for (int y = 0; y < crop_h; ++y) {
-        for (int x = 0; x < crop_w; ++x) {
-            for (int c = 0; c < channels; ++c) {
-                crop_data[(y * crop_w + x) * channels + c] = src[((y + y1) * src_w + (x + x1)) * channels + c];
-            }
+
+    for (int y = 0; y < dst_h; ++y) {
+        float sy = (float)y * scale_y;
+        int y0 = (int)sy;
+        int y1c = std::min(y0 + 1, crop_h - 1);
+        float dy = sy - (float)y0;
+        float wy0 = 1.0f - dy;
+        float wy1 = dy;
+
+        const unsigned char* row0 = src + (y1 + y0) * src_w * 3;
+        const unsigned char* row1 = src + (y1 + y1c) * src_w * 3;
+        float* d0 = ch0 + y * dst_w;
+        float* d1 = ch1 + y * dst_w;
+        float* d2 = ch2 + y * dst_w;
+
+        for (int x = 0; x < dst_w; ++x) {
+            int i0 = x0_tab[x];
+            int i1 = x1_tab[x];
+            float dx = dx_tab[x];
+            float w00 = (1.0f - dx) * wy0;
+            float w10 = dx * wy0;
+            float w01 = (1.0f - dx) * wy1;
+            float w11 = dx * wy1;
+
+            float r = w00 * row0[i0 + 0] + w10 * row0[i1 + 0] + w01 * row1[i0 + 0] + w11 * row1[i1 + 0];
+            float g = w00 * row0[i0 + 1] + w10 * row0[i1 + 1] + w01 * row1[i0 + 1] + w11 * row1[i1 + 1];
+            float b = w00 * row0[i0 + 2] + w10 * row0[i1 + 2] + w01 * row1[i0 + 2] + w11 * row1[i1 + 2];
+
+            d0[x] = (float)((int)r) * inv255;
+            d1[x] = (float)((int)g) * inv255;
+            d2[x] = (float)((int)b) * inv255;
         }
     }
-    return crop_data;
 }
 
 // Calculate Intersection over Union (IoU)
@@ -549,47 +606,225 @@ static void jpeg_write_callback(void* context, void* data, int size) {
     output->insert(output->end(), bytes, bytes + size);
 }
 
+static int get_optimal_threads() {
+#if defined(__APPLE__)
+    int perf_cores = 0;
+    size_t len = sizeof(perf_cores);
+    if (sysctlbyname("hw.perflevel0.physicalcpu", &perf_cores, &len, NULL, 0) == 0 && perf_cores > 0) {
+        return perf_cores;
+    }
+#endif
+    int big = ncnn::get_big_cpu_count();
+    return (big > 0) ? big : std::max(1, ncnn::get_cpu_count());
+}
+
+struct MappedFile {
+    const unsigned char* data;
+    size_t size;
+    MappedFile() : data(NULL), size(0) {}
+    ~MappedFile() { release(); }
+    bool map(const std::string& path) {
+        release();
+#if defined(__APPLE__) || defined(__linux__)
+        int fd = open(path.c_str(), O_RDONLY);
+        if (fd < 0) return false;
+        struct stat st;
+        if (fstat(fd, &st) != 0 || st.st_size <= 0) {
+            close(fd);
+            return false;
+        }
+        size = (size_t)st.st_size;
+        void* p = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
+        close(fd);
+        if (p == MAP_FAILED) {
+            size = 0;
+            return false;
+        }
+        data = (const unsigned char*)p;
+        return true;
+#else
+        return false;
+#endif
+    }
+    void release() {
+#if defined(__APPLE__) || defined(__linux__)
+        if (data && size > 0) {
+            munmap((void*)data, size);
+        }
+#endif
+        data = NULL;
+        size = 0;
+    }
+};
+
+// Normalize and validate Indonesian license plate format: [A-Z]{1,2}[0-9]{1,4}[A-Z]{0,3}
+static bool normalize_indonesian_plate(std::string& plate) {
+    if (plate.size() < 3 || plate.size() > 9) return false;
+
+    auto digit_to_letter = [](char c) -> char {
+        switch (c) {
+            case '0': return 'D';
+            case '1': return 'I';
+            case '2': return 'Z';
+            case '4': return 'A';
+            case '5': return 'S';
+            case '6': return 'G';
+            case '8': return 'B';
+            default: return c;
+        }
+    };
+    auto letter_to_digit = [](char c) -> char {
+        switch (c) {
+            case 'O': case 'D': case 'Q': return '0';
+            case 'I': case 'L': return '1';
+            case 'Z': return '2';
+            case 'S': return '5';
+            case 'G': return '6';
+            case 'B': return '8';
+            default: return c;
+        }
+    };
+
+    // First character of an Indonesian plate is always a letter (Kode Wilayah)
+    if (plate[0] >= '0' && plate[0] <= '9') {
+        plate[0] = digit_to_letter(plate[0]);
+    }
+    if (plate[0] < 'A' || plate[0] > 'Z') return false;
+
+    size_t n = plate.size();
+    size_t idx = 1;
+    if (idx < n && plate[idx] >= 'A' && plate[idx] <= 'Z') {
+        ++idx;
+    }
+
+    // Next 1..4 characters must be digits (Nomor Polisi)
+    size_t digit_start = idx;
+    while (idx < n && (idx - digit_start) < 4) {
+        if (plate[idx] >= '0' && plate[idx] <= '9') {
+            ++idx;
+        } else if (idx == digit_start) {
+            char d = letter_to_digit(plate[idx]);
+            if (d >= '0' && d <= '9') {
+                plate[idx] = d;
+                ++idx;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    size_t digit_count = idx - digit_start;
+    if (digit_count < 1 || digit_count > 4) return false;
+
+    // Remaining 0..3 characters must be letters (Seri Akhir)
+    size_t suffix_count = n - idx;
+    if (suffix_count > 3) return false;
+    for (size_t k = idx; k < n; ++k) {
+        if (plate[k] >= '0' && plate[k] <= '9') {
+            plate[k] = digit_to_letter(plate[k]);
+        }
+        if (plate[k] < 'A' || plate[k] > 'Z') return false;
+    }
+    return true;
+}
+
 class AlprEngine {
 public:
-    AlprEngine() : loaded_(false), model_load_ms_(0.0) {}
+    AlprEngine() : loaded_(false), model_load_ms_(0.0) {
+        blob_pool_.set_size_compare_ratio(0.0f);
+        workspace_pool_.set_size_compare_ratio(0.0f);
+    }
 
     bool load(const std::string& model_dir, std::string& error) {
+#if defined(__APPLE__)
+        pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
         const std::chrono::steady_clock::time_point started = std::chrono::steady_clock::now();
+        const int num_threads = get_optimal_threads();
 
-        std::cout << "[+] Loading YOLOv9 model..." << std::endl;
-        yolo_net_.opt.use_fp16_storage = false;
-        yolo_net_.opt.use_fp16_arithmetic = false;
-        yolo_net_.opt.use_fp16_packed = false;
-        yolo_net_.register_custom_layer("ArgMax", ArgMax_custom_creator);
-        yolo_net_.register_custom_layer("NonMaxSuppression", NonMaxSuppression_custom_creator);
-        yolo_net_.register_custom_layer("Gather", Gather_custom_creator);
-        if (yolo_net_.load_param(join_path(model_dir, "yolo.param").c_str()) != 0 ||
-            yolo_net_.load_model(join_path(model_dir, "yolo.bin").c_str()) != 0) {
+        if (g_verbose) {
+            std::cout << "[+] Loading YOLOv9 model (threads=" << num_threads << ")..." << std::endl;
+        }
+        yolo_net_.opt.num_threads = num_threads;
+        yolo_net_.opt.blob_allocator = &blob_pool_;
+        yolo_net_.opt.workspace_allocator = &workspace_pool_;
+        yolo_net_.opt.lightmode = true;
+        yolo_net_.opt.use_fp16_packed = true;
+        yolo_net_.opt.use_fp16_storage = true;
+        yolo_net_.opt.use_fp16_arithmetic = true;
+
+        const std::string yolo_param_path = join_path(model_dir, "yolo.param");
+        const std::string yolo_bin_path = join_path(model_dir, "yolo.bin");
+        if (yolo_net_.load_param(yolo_param_path.c_str()) != 0) {
+            error = "Failed to load YOLOv9 param";
+            return false;
+        }
+        if (yolo_bin_map_.map(yolo_bin_path)) {
+            if (yolo_net_.load_model(yolo_bin_map_.data) == 0) {
+                error = "Failed to load YOLOv9 mapped model";
+                return false;
+            }
+        } else if (yolo_net_.load_model(yolo_bin_path.c_str()) != 0) {
             error = "Failed to load YOLOv9 model";
             return false;
         }
 
-        std::cout << "[+] Loading CCT-XS OCR model..." << std::endl;
-        ocr_net_.opt.use_fp16_packed = false;
-        ocr_net_.opt.use_fp16_storage = false;
-        ocr_net_.opt.use_fp16_arithmetic = false;
-        ocr_net_.register_custom_layer("Shape", Shape_custom_creator);
-        ocr_net_.register_custom_layer("Gather", Gather_custom_creator);
-        if (ocr_net_.load_param(join_path(model_dir, "ocr.param").c_str()) != 0 ||
-            ocr_net_.load_model(join_path(model_dir, "ocr_patched.bin").c_str()) != 0) {
+        if (g_verbose) {
+            std::cout << "[+] Loading CCT-XS OCR model..." << std::endl;
+        }
+        ocr_net_.opt.num_threads = num_threads;
+        ocr_net_.opt.blob_allocator = &blob_pool_;
+        ocr_net_.opt.workspace_allocator = &workspace_pool_;
+        ocr_net_.opt.lightmode = true;
+        ocr_net_.opt.use_fp16_packed = true;
+        ocr_net_.opt.use_fp16_storage = true;
+        ocr_net_.opt.use_fp16_arithmetic = true;
+
+        const std::string ocr_param_path = join_path(model_dir, "ocr.param");
+        const std::string ocr_bin_path = join_path(model_dir, "ocr_patched.bin");
+        if (ocr_net_.load_param(ocr_param_path.c_str()) != 0) {
+            error = "Failed to load OCR param";
+            return false;
+        }
+        if (ocr_bin_map_.map(ocr_bin_path)) {
+            if (ocr_net_.load_model(ocr_bin_map_.data) == 0) {
+                error = "Failed to load OCR mapped model";
+                return false;
+            }
+        } else if (ocr_net_.load_model(ocr_bin_path.c_str()) != 0) {
             error = "Failed to load OCR model";
             return false;
         }
 
+        // Precompute static token reducer query blobs once at startup
+        {
+            ncnn::Mat dummy(128, 64, 3);
+            dummy.fill(0.0f);
+            ncnn::Extractor ex = ocr_net_.create_extractor();
+            ex.set_light_mode(false);
+            ex.input("CCT_OCR_1/conv_stem_1/conv2d_1/BiasAdd__366:0", dummy);
+            ex.extract("CCT_OCR_1/token_reducer_1/Tile/ReadVariableOp:0_splitncnn_0", token_tile_const_);
+            ex.extract("CCT_OCR_1/token_reducer_1/multi_head_attention_3_1/transpose_1:0", token_query_const_);
+            token_tile_const_ = token_tile_const_.clone();
+            token_query_const_ = token_query_const_.clone();
+        }
+        ncnn::set_omp_num_threads(num_threads);
+
         loaded_ = true;
         model_load_ms_ = elapsed_ms(started, std::chrono::steady_clock::now());
-        std::cout << "[+] Models loaded once in " << std::fixed << std::setprecision(2)
-                  << model_load_ms_ << " ms" << std::endl;
+        if (g_verbose) {
+            std::cout << "[+] Models loaded once in " << std::fixed << std::setprecision(2)
+                      << model_load_ms_ << " ms" << std::endl;
+        }
         return true;
     }
 
     bool infer(const unsigned char* encoded, size_t encoded_size, InferenceOutput& output, std::string& error) {
         std::lock_guard<std::mutex> guard(infer_mutex_);
+#if defined(__APPLE__)
+        pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+#endif
         const std::chrono::steady_clock::time_point total_started = std::chrono::steady_clock::now();
         if (!loaded_) {
             error = "Models are not loaded";
@@ -614,45 +849,132 @@ public:
         float scale = 1.0f;
         int pad_x = 0;
         int pad_y = 0;
-        std::vector<unsigned char> padded_img(target_w * target_h * img_c);
-        letterbox(img_data, img_w, img_h, img_c, padded_img.data(), target_w, target_h, scale, pad_x, pad_y);
+        ncnn::Mat yolo_in;
+        letterbox_to_yolo_mat(img_data, img_w, img_h, yolo_in, target_w, target_h, scale, pad_x, pad_y, &blob_pool_);
 
-        ncnn::Mat yolo_in(target_w, target_h, 3);
-        for (int c = 0; c < 3; ++c) {
-            float* ptr = yolo_in.channel(c);
-            for (int y = 0; y < target_h; ++y) {
-                for (int x = 0; x < target_w; ++x) {
-                    ptr[y * target_w + x] = padded_img[(y * target_w + x) * img_c + c] / 255.0f;
+        ncnn::Extractor yolo_ex = yolo_net_.create_extractor();
+        yolo_ex.input("images", yolo_in);
+
+        static const char* const score_names[3] = {
+            "/model/model.22/cv3.0/cv3.0.2/Conv_output_0",
+            "/model/model.22/cv3.1/cv3.1.2/Conv_output_0",
+            "/model/model.22/cv3.2/cv3.2.2/Conv_output_0"
+        };
+        static const char* const box_names[3] = {
+            "/model/model.22/cv2.0/cv2.0.2/Conv_output_0",
+            "/model/model.22/cv2.1/cv2.1.2/Conv_output_0",
+            "/model/model.22/cv2.2/cv2.2.2/Conv_output_0"
+        };
+        static const int strides[3] = {8, 16, 32};
+        const float logit_threshold = -0.4054651f; // -log(1 / 0.40 - 1)
+
+        struct RawBox {
+            float x1, y1, x2, y2, score;
+        };
+        std::vector<RawBox> candidates;
+
+        for (int head = 0; head < 3; ++head) {
+            ncnn::Mat sm;
+            if (yolo_ex.extract(score_names[head], sm) != 0) {
+                stbi_image_free(img_data);
+                error = "Failed to extract detector score output";
+                return false;
+            }
+            const float* sp = sm.channel(0);
+            int gh = sm.h;
+            int gw = sm.w;
+            int total_cells = gh * gw;
+
+            bool has_candidate = false;
+            for (int idx = 0; idx < total_cells; ++idx) {
+                if (sp[idx] >= logit_threshold) {
+                    has_candidate = true;
+                    break;
+                }
+            }
+            if (!has_candidate) continue;
+
+            ncnn::Mat bm;
+            if (yolo_ex.extract(box_names[head], bm) != 0) {
+                stbi_image_free(img_data);
+                error = "Failed to extract detector box output";
+                return false;
+            }
+            const float stride = (float)strides[head];
+
+            for (int y = 0; y < gh; ++y) {
+                for (int x = 0; x < gw; ++x) {
+                    int sidx = y * gw + x;
+                    float logit = sp[sidx];
+                    if (logit < logit_threshold) continue;
+                    float score = 1.0f / (1.0f + std::exp(-logit));
+                    if (score < 0.40f) continue;
+
+                    float dist[4];
+                    for (int side = 0; side < 4; ++side) {
+                        float vals[16];
+                        float max_v = -1e9f;
+                        for (int k = 0; k < 16; ++k) {
+                            float v = bm.channel(side * 16 + k)[sidx];
+                            vals[k] = v;
+                            if (v > max_v) max_v = v;
+                        }
+                        float sum_exp = 0.0f;
+                        float weighted = 0.0f;
+                        for (int k = 0; k < 16; ++k) {
+                            float e = std::exp(vals[k] - max_v);
+                            sum_exp += e;
+                            weighted += e * k;
+                        }
+                        dist[side] = weighted / sum_exp;
+                    }
+
+                    float cx = (float)x + 0.5f;
+                    float cy = (float)y + 0.5f;
+                    RawBox rb;
+                    rb.x1 = (cx - dist[0]) * stride;
+                    rb.y1 = (cy - dist[1]) * stride;
+                    rb.x2 = (cx + dist[2]) * stride;
+                    rb.y2 = (cy + dist[3]) * stride;
+                    rb.score = score;
+                    candidates.push_back(rb);
                 }
             }
         }
 
-        ncnn::Extractor yolo_ex = yolo_net_.create_extractor();
-        yolo_ex.set_light_mode(false);
-        yolo_ex.input("images", yolo_in);
-        ncnn::Mat nms_out, boxes_out, scores_out;
-        if (yolo_ex.extract("/end2end/NonMaxSuppression_output_0", nms_out) != 0 ||
-            yolo_ex.extract("/end2end/Add_output_0", boxes_out) != 0 ||
-            yolo_ex.extract("/end2end/Transpose_1_output_0", scores_out) != 0) {
-            stbi_image_free(img_data);
-            error = "Failed to extract detector output";
-            return false;
+        std::sort(candidates.begin(), candidates.end(), [](const RawBox& a, const RawBox& b) {
+            return a.score > b.score;
+        });
+
+        std::vector<RawBox> selected;
+        for (size_t i = 0; i < candidates.size(); ++i) {
+            if (selected.size() >= 100) break;
+            const RawBox& cand = candidates[i];
+            bool keep = true;
+            for (size_t j = 0; j < selected.size(); ++j) {
+                const RawBox& sel = selected[j];
+                float ix1 = std::max(cand.x1, sel.x1);
+                float iy1 = std::max(cand.y1, sel.y1);
+                float ix2 = std::min(cand.x2, sel.x2);
+                float iy2 = std::min(cand.y2, sel.y2);
+                float inter = (ix2 > ix1 && iy2 > iy1) ? (ix2 - ix1) * (iy2 - iy1) : 0.0f;
+                float u = (cand.x2 - cand.x1) * (cand.y2 - cand.y1) + (sel.x2 - sel.x1) * (sel.y2 - sel.y1) - inter;
+                if (u > 0.0f && (inter / u) > 0.45f) {
+                    keep = false;
+                    break;
+                }
+            }
+            if (keep) selected.push_back(cand);
         }
 
         std::vector<BoundingBox> boxes;
-        const float* scores_ptr = scores_out;
-        for (int i = 0; i < nms_out.h; ++i) {
-            const float* row = nms_out.row(i);
-            int idx = (int)row[2];
-            if (idx < 0 || idx >= boxes_out.h) continue;
-            float score = scores_ptr[idx];
-            if (score < 0.40f) continue;
-
-            const float* source = boxes_out.row(idx);
-            int x1 = (int)std::round((source[0] - pad_x) / scale);
-            int y1 = (int)std::round((source[1] - pad_y) / scale);
-            int x2 = (int)std::round((source[2] - pad_x) / scale);
-            int y2 = (int)std::round((source[3] - pad_y) / scale);
+        boxes.reserve(selected.size());
+        for (size_t i = 0; i < selected.size(); ++i) {
+            const RawBox& source = selected[i];
+            int x1 = (int)std::round((source.x1 - pad_x) / scale);
+            int y1 = (int)std::round((source.y1 - pad_y) / scale);
+            int x2 = (int)std::round((source.x2 - pad_x) / scale);
+            int y2 = (int)std::round((source.y2 - pad_y) / scale);
             int horizontal_pad = (int)std::round((x2 - x1) * 0.08f);
             x1 -= horizontal_pad;
             x2 += horizontal_pad;
@@ -662,67 +984,63 @@ public:
             box.y1 = std::max(0, std::min(y1, img_h - 1));
             box.x2 = std::max(0, std::min(x2, img_w));
             box.y2 = std::max(0, std::min(y2, img_h));
-            box.score = score;
-            if (box.area() > 0) boxes.push_back(box);
+            box.score = source.score;
+            // Indonesian license plates are horizontal rectangles (width > height)
+            if (box.area() > 0 && box.width() > box.height()) {
+                boxes.push_back(box);
+            }
         }
 
         output.detections.clear();
+        output.detections.reserve(boxes.size());
         for (size_t d = 0; d < boxes.size(); ++d) {
             const BoundingBox& box = boxes[d];
-            int crop_w = 0, crop_h = 0;
-            std::vector<unsigned char> crop = crop_bbox(
-                img_data, img_w, img_h, img_c, box.x1, box.y1, box.x2, box.y2, crop_w, crop_h);
-            const int ocr_w = 128;
-            const int ocr_h = 64;
-            std::vector<unsigned char> resized(ocr_w * ocr_h * img_c);
-            resize_bilinear(crop.data(), crop_w, crop_h, img_c, resized.data(), ocr_w, ocr_h);
-
-            ncnn::Mat ocr_in(3, 128, 64);
-            for (int row = 0; row < 64; ++row) {
-                float* ptr = ocr_in.channel(row);
-                for (int col = 0; col < 128; ++col) {
-                    ptr[col * 3 + 0] = (float)resized[(row * 128 + col) * img_c + 0];
-                    ptr[col * 3 + 1] = (float)resized[(row * 128 + col) * img_c + 1];
-                    ptr[col * 3 + 2] = (float)resized[(row * 128 + col) * img_c + 2];
-                }
-            }
+            ncnn::Mat ocr_in;
+            crop_resize_to_ocr_mat(img_data, img_w, img_h, box.x1, box.y1, box.x2, box.y2, ocr_in, &blob_pool_);
 
             ncnn::Extractor ocr_ex = ocr_net_.create_extractor();
-            ocr_ex.set_light_mode(false);
-            ocr_ex.input("input", ocr_in);
+            ocr_ex.input("CCT_OCR_1/conv_stem_1/conv2d_1/BiasAdd__366:0", ocr_in);
+            ocr_ex.input("CCT_OCR_1/token_reducer_1/Tile/ReadVariableOp:0_splitncnn_0", token_tile_const_);
+            ocr_ex.input("CCT_OCR_1/token_reducer_1/multi_head_attention_3_1/transpose_1:0", token_query_const_);
             ncnn::Mat ocr_out;
-            if (ocr_ex.extract("plate", ocr_out) != 0) {
+            if (ocr_ex.extract("CCT_OCR_1/plate_1/dense_16_1/BiasAdd:0", ocr_out) != 0) {
                 stbi_image_free(img_data);
                 error = "Failed to extract OCR output";
                 return false;
             }
 
             std::string text;
-            std::vector<float> confidences;
+            float conf_sum = 0.0f;
+            int conf_cnt = 0;
             for (int t = 0; t < ocr_out.h; ++t) {
                 const float* row = ocr_out.row(t);
-                int max_index = -1;
-                float max_probability = -1.0f;
-                for (int c = 0; c < ocr_out.w; ++c) {
-                    if (row[c] > max_probability) {
-                        max_probability = row[c];
+                int max_index = 0;
+                float max_logit = row[0];
+                for (int c = 1; c < ocr_out.w; ++c) {
+                    if (row[c] > max_logit) {
+                        max_logit = row[c];
                         max_index = c;
                     }
                 }
                 if (max_index >= 0 && max_index != BLANK_INDEX && max_index < (int)CHARSET.size()) {
+                    float sum_exp = 0.0f;
+                    for (int c = 0; c < ocr_out.w; ++c) {
+                        sum_exp += std::exp(row[c] - max_logit);
+                    }
                     text += CHARSET[max_index];
-                    confidences.push_back(max_probability);
+                    conf_sum += 1.0f / sum_exp;
+                    ++conf_cnt;
                 }
             }
 
-            float confidence = 0.0f;
-            for (size_t i = 0; i < confidences.size(); ++i) confidence += confidences[i];
-            if (!confidences.empty()) confidence /= confidences.size();
+            if (!normalize_indonesian_plate(text)) {
+                continue;
+            }
 
             Detection detection;
             detection.bbox = box;
             detection.text = text;
-            detection.ocr_conf = confidence;
+            detection.ocr_conf = conf_cnt > 0 ? (conf_sum / conf_cnt) : 0.0f;
             output.detections.push_back(detection);
         }
 
@@ -731,6 +1049,7 @@ public:
             draw_box_text(img_data, img_w, img_h, img_c, output.detections[i].bbox, output.detections[i].text);
         }
         output.jpeg.clear();
+        output.jpeg.reserve(encoded_size + 16384);
         if (!stbi_write_jpg_to_func(jpeg_write_callback, &output.jpeg, img_w, img_h, img_c, img_data, 90)) {
             stbi_image_free(img_data);
             error = "Failed to encode result image";
@@ -748,6 +1067,12 @@ public:
     double model_load_ms() const { return model_load_ms_; }
 
 private:
+    ncnn::UnlockedPoolAllocator blob_pool_;
+    ncnn::PoolAllocator workspace_pool_;
+    MappedFile yolo_bin_map_;
+    MappedFile ocr_bin_map_;
+    ncnn::Mat token_tile_const_;
+    ncnn::Mat token_query_const_;
     ncnn::Net yolo_net_;
     ncnn::Net ocr_net_;
     bool loaded_;
@@ -815,6 +1140,7 @@ static std::string inference_json(const InferenceOutput& output) {
 
 static int run_server(AlprEngine& engine, const std::string& host, int port, const std::string& web_file) {
     httplib::Server server;
+    server.new_task_queue = [] { return new httplib::ThreadPool(1); };
     server.set_payload_max_length(15 * 1024 * 1024);
     server.set_read_timeout(30, 0);
     server.set_write_timeout(30, 0);

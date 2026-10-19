@@ -214,7 +214,7 @@ STBIWDEF void stbi_flip_vertically_on_write(int flip_boolean);
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <math.h>
 
 #if defined(STBIW_MALLOC) && defined(STBIW_FREE) && (defined(STBIW_REALLOC) || defined(STBIW_REALLOC_SIZED))
 // ok
@@ -268,7 +268,7 @@ typedef struct
 {
    stbi_write_func *func;
    void *context;
-   unsigned char buffer[64];
+   unsigned char buffer[4096];
    int buf_used;
 } stbi__write_context;
 
@@ -773,7 +773,7 @@ static int stbi_write_hdr_core(stbi__write_context *s, int x, int y, int comp, f
 #ifdef __STDC_LIB_EXT1__
       len = sprintf_s(buffer, sizeof(buffer), "EXPOSURE=          1.0000000000000\n\n-Y %d +X %d\n", y, x);
 #else
-      len = sprintf(buffer, "EXPOSURE=          1.0000000000000\n\n-Y %d +X %d\n", y, x);
+      len = snprintf(buffer, sizeof(buffer), "EXPOSURE=          1.0000000000000\n\n-Y %d +X %d\n", y, x);
 #endif
       s->func(s->context, buffer, len);
 
@@ -1256,9 +1256,9 @@ static void stbiw__jpg_writeBits(stbi__write_context *s, int *bitBufP, int *bitC
    bitBuf |= bs[0] << (24 - bitCnt);
    while(bitCnt >= 8) {
       unsigned char c = (bitBuf >> 16) & 255;
-      stbiw__putc(s, c);
+      stbiw__write1(s, c);
       if(c == 255) {
-         stbiw__putc(s, 0);
+         stbiw__write1(s, 0);
       }
       bitBuf <<= 8;
       bitCnt -= 8;
@@ -1318,10 +1318,14 @@ static void stbiw__jpg_DCT(float *d0p, float *d1p, float *d2p, float *d3p, float
 static void stbiw__jpg_calcBits(int val, unsigned short bits[2]) {
    int tmp1 = val < 0 ? -val : val;
    val = val < 0 ? val-1 : val;
+#if defined(__GNUC__) || defined(__clang__)
+   bits[1] = (unsigned short)(32 - __builtin_clz((unsigned int)tmp1));
+#else
    bits[1] = 1;
    while(tmp1 >>= 1) {
       ++bits[1];
    }
+#endif
    bits[0] = val & ((1<<bits[1])-1);
 }
 
@@ -1598,8 +1602,9 @@ static int stbi_write_jpg_core(stbi__write_context *s, int width, int height, in
    }
 
    // EOI
-   stbiw__putc(s, 0xFF);
-   stbiw__putc(s, 0xD9);
+   stbiw__write1(s, 0xFF);
+   stbiw__write1(s, 0xD9);
+   stbiw__write_flush(s);
 
    return 1;
 }

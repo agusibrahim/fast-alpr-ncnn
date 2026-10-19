@@ -1,4 +1,4 @@
-/* stb_image - v2.28 - public domain image loader - http://nothings.org/stb
+/* stb_image - v2.30 - public domain image loader - http://nothings.org/stb
                                   no warranty implied; use at your own risk
 
    Do this:
@@ -48,6 +48,8 @@ LICENSE
 
 RECENT REVISION HISTORY:
 
+      2.30  (2024-05-31) avoid erroneous gcc warning
+      2.29  (2023-05-xx) optimizations
       2.28  (2023-01-29) many error fixes, security errors, just tons of stuff
       2.27  (2021-07-11) document stbi_info better, 16-bit PNM support, bug fixes
       2.26  (2020-07-13) many minor fixes
@@ -589,7 +591,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 #include <limits.h>
 
 #if !defined(STBI_NO_LINEAR) || !defined(STBI_NO_HDR)
-  // ldexp, pow
+#include <math.h>  // ldexp, pow
 #endif
 
 #ifndef STBI_NO_STDIO
@@ -779,20 +781,6 @@ static int stbi__sse2_available(void)
 
 #ifdef STBI_NEON
 #include <arm_neon.h>
-#ifdef _MSC_VER
-#define STBI_SIMD_ALIGN(type, name) __declspec(align(16)) type name
-#else
-#define STBI_SIMD_ALIGN(type, name) type name __attribute__((aligned(16)))
-#endif
-#endif
-
-// RISC-V VECTOR
-#if defined(STBI_NO_SIMD) && defined(STBI_RVV)
-#undef STBI_RVV
-#endif
-
-#ifdef STBI_RVV
-#include <riscv_vector.h>
 #ifdef _MSC_VER
 #define STBI_SIMD_ALIGN(type, name) __declspec(align(16)) type name
 #else
@@ -1086,8 +1074,8 @@ static int stbi__addints_valid(int a, int b)
    return a <= INT_MAX - b;
 }
 
-// returns 1 if the product of two signed shorts is valid, 0 on overflow.
-static int stbi__mul2shorts_valid(short a, short b)
+// returns 1 if the product of two ints fits in a signed short, 0 on overflow.
+static int stbi__mul2shorts_valid(int a, int b)
 {
    if (b == 0 || b == -1) return 1; // multiplication by 0 is always 0; check for -1 so SHRT_MIN/b doesn't overflow
    if ((a >= 0) == (b >= 0)) return a <= SHRT_MAX/b; // product is positive, so similar to mul2sizes_valid
@@ -1878,7 +1866,7 @@ static float   *stbi__ldr_to_hdr(stbi_uc *data, int x, int y, int comp)
    if (comp & 1) n = comp; else n = comp-1;
    for (i=0; i < x*y; ++i) {
       for (k=0; k < n; ++k) {
-         output[i*comp + k] = powf(data[i*comp+k]/255.0f, stbi__l2h_gamma) * stbi__l2h_scale;
+         output[i*comp + k] = (float) (pow(data[i*comp+k]/255.0f, stbi__l2h_gamma) * stbi__l2h_scale);
       }
    }
    if (n < comp) {
@@ -2924,180 +2912,6 @@ static void stbi__idct_simd(stbi_uc *out, int out_stride, short data[64])
 
 #endif // STBI_NEON
 
-#ifdef STBI_RVV
-
-// risc-v vector integer IDCT. should produce bit-identical
-// results to the generic C version.
-static void stbi__idct_simd(stbi_uc *out, int out_stride, short data[64])
-{
-   const short rot0_0 = stbi__f2f(0.5411961f);
-   const short rot0_1 = stbi__f2f(-1.847759065f);
-   const short rot0_2 = stbi__f2f( 0.765366865f);
-   const short rot1_0 = stbi__f2f( 1.175875602f);
-   const short rot1_1 = stbi__f2f(-0.899976223f);
-   const short rot1_2 = stbi__f2f(-2.562915447f);
-   const short rot2_0 = stbi__f2f(-1.961570560f);
-   const short rot2_1 = stbi__f2f(-0.390180644f);
-   const short rot3_0 = stbi__f2f( 0.298631336f);
-   const short rot3_1 = stbi__f2f( 2.053119869f);
-   const short rot3_2 = stbi__f2f( 3.072711026f);
-   const short rot3_3 = stbi__f2f( 1.501321110f);
-
-   // scratch buffer for data transpose
-   short tmp[64];
-
-   const size_t vl = vsetvl_e16m1(8);
-
-   // column pass
-   {
-      vint16m1_t row0 = vle16_v_i16m1(data + 0*8, vl);
-      vint16m1_t row1 = vle16_v_i16m1(data + 1*8, vl);
-      vint16m1_t row2 = vle16_v_i16m1(data + 2*8, vl);
-      vint16m1_t row3 = vle16_v_i16m1(data + 3*8, vl);
-      vint16m1_t row4 = vle16_v_i16m1(data + 4*8, vl);
-      vint16m1_t row5 = vle16_v_i16m1(data + 5*8, vl);
-      vint16m1_t row6 = vle16_v_i16m1(data + 6*8, vl);
-      vint16m1_t row7 = vle16_v_i16m1(data + 7*8, vl);
-
-      // even part
-      vint16m1_t sum26 = vadd_vv_i16m1(row2, row6, vl);
-      vint32m2_t p1e = vwmul_vx_i32m2(sum26, rot0_0, vl);
-      vint32m2_t t2e = vwmacc_vx_i32m2(p1e, rot0_1, row6, vl);
-      vint32m2_t t3e = vwmacc_vx_i32m2(p1e, rot0_2, row2, vl);
-      vint32m2_t t0e = vsll_vx_i32m2(vwadd_vv_i32m2(row0, row4, vl), 12, vl);
-      vint32m2_t t1e = vsll_vx_i32m2(vwsub_vv_i32m2(row0, row4, vl), 12, vl);
-      vint32m2_t x0 = vadd_vv_i32m2(t0e, t3e, vl);
-      vint32m2_t x3 = vsub_vv_i32m2(t0e, t3e, vl);
-      vint32m2_t x1 = vadd_vv_i32m2(t1e, t2e, vl);
-      vint32m2_t x2 = vsub_vv_i32m2(t1e, t2e, vl);
-
-      // odd part
-      vint16m1_t sum15 = vadd_vv_i16m1(row1, row5, vl);
-      vint16m1_t sum17 = vadd_vv_i16m1(row1, row7, vl);
-      vint16m1_t sum35 = vadd_vv_i16m1(row3, row5, vl);
-      vint16m1_t sum37 = vadd_vv_i16m1(row3, row7, vl);
-      vint32m2_t p5o = vwmul_vx_i32m2(vadd_vv_i16m1(sum17, sum35, vl), rot1_0, vl);
-      vint32m2_t p1o = vwmacc_vx_i32m2(p5o, rot1_1, sum17, vl);
-      vint32m2_t p2o = vwmacc_vx_i32m2(p5o, rot1_2, sum35, vl);
-      vint32m2_t p3o = vwmul_vx_i32m2(sum37, rot2_0, vl);
-      vint32m2_t p4o = vwmul_vx_i32m2(sum15, rot2_1, vl);
-      vint32m2_t sump13o = vadd_vv_i32m2(p1o, p3o, vl);
-      vint32m2_t sump24o = vadd_vv_i32m2(p2o, p4o, vl);
-      vint32m2_t sump23o = vadd_vv_i32m2(p2o, p3o, vl);
-      vint32m2_t sump14o = vadd_vv_i32m2(p1o, p4o, vl);
-      vint32m2_t x4 = vwmacc_vx_i32m2(sump13o, rot3_0, row7, vl);
-      vint32m2_t x5 = vwmacc_vx_i32m2(sump24o, rot3_1, row5, vl);
-      vint32m2_t x6 = vwmacc_vx_i32m2(sump23o, rot3_2, row3, vl);
-      vint32m2_t x7 = vwmacc_vx_i32m2(sump14o, rot3_3, row1, vl);
-
-      // bfly32
-      x0 = vadd_vx_i32m2(x0, 512, vl);
-      x1 = vadd_vx_i32m2(x1, 512, vl);
-      x2 = vadd_vx_i32m2(x2, 512, vl);
-      x3 = vadd_vx_i32m2(x3, 512, vl);
-      vint16m1_t out0 = vnsra_wx_i16m1(vadd_vv_i32m2(x0, x7, vl), 10, vl);
-      vint16m1_t out7 = vnsra_wx_i16m1(vsub_vv_i32m2(x0, x7, vl), 10, vl);
-      vint16m1_t out1 = vnsra_wx_i16m1(vadd_vv_i32m2(x1, x6, vl), 10, vl);
-      vint16m1_t out6 = vnsra_wx_i16m1(vsub_vv_i32m2(x1, x6, vl), 10, vl);
-      vint16m1_t out2 = vnsra_wx_i16m1(vadd_vv_i32m2(x2, x5, vl), 10, vl);
-      vint16m1_t out5 = vnsra_wx_i16m1(vsub_vv_i32m2(x2, x5, vl), 10, vl);
-      vint16m1_t out3 = vnsra_wx_i16m1(vadd_vv_i32m2(x3, x4, vl), 10, vl);
-      vint16m1_t out4 = vnsra_wx_i16m1(vsub_vv_i32m2(x3, x4, vl), 10, vl);
-
-      // 8x8 transpose
-      // I would prefer to implement this transpose in register without save+load,
-      // but rvv does not have shuffle/zip instructions among multiple registers.
-      // what a pity :(   --- nihui
-      vsse16_v_i16m1(tmp + 0, 8 * 2, out0, vl);
-      vsse16_v_i16m1(tmp + 1, 8 * 2, out1, vl);
-      vsse16_v_i16m1(tmp + 2, 8 * 2, out2, vl);
-      vsse16_v_i16m1(tmp + 3, 8 * 2, out3, vl);
-      vsse16_v_i16m1(tmp + 4, 8 * 2, out4, vl);
-      vsse16_v_i16m1(tmp + 5, 8 * 2, out5, vl);
-      vsse16_v_i16m1(tmp + 6, 8 * 2, out6, vl);
-      vsse16_v_i16m1(tmp + 7, 8 * 2, out7, vl);
-   }
-
-   // row pass
-   {
-      vint16m1_t row0 = vle16_v_i16m1(tmp + 0*8, vl);
-      vint16m1_t row1 = vle16_v_i16m1(tmp + 1*8, vl);
-      vint16m1_t row2 = vle16_v_i16m1(tmp + 2*8, vl);
-      vint16m1_t row3 = vle16_v_i16m1(tmp + 3*8, vl);
-      vint16m1_t row4 = vle16_v_i16m1(tmp + 4*8, vl);
-      vint16m1_t row5 = vle16_v_i16m1(tmp + 5*8, vl);
-      vint16m1_t row6 = vle16_v_i16m1(tmp + 6*8, vl);
-      vint16m1_t row7 = vle16_v_i16m1(tmp + 7*8, vl);
-
-      // even part
-      vint16m1_t sum26 = vadd_vv_i16m1(row2, row6, vl);
-      vint32m2_t p1e = vwmul_vx_i32m2(sum26, rot0_0, vl);
-      vint32m2_t t2e = vwmacc_vx_i32m2(p1e, rot0_1, row6, vl);
-      vint32m2_t t3e = vwmacc_vx_i32m2(p1e, rot0_2, row2, vl);
-      vint32m2_t t0e = vsll_vx_i32m2(vwadd_vv_i32m2(row0, row4, vl), 12, vl);
-      vint32m2_t t1e = vsll_vx_i32m2(vwsub_vv_i32m2(row0, row4, vl), 12, vl);
-      vint32m2_t x0 = vadd_vv_i32m2(t0e, t3e, vl);
-      vint32m2_t x3 = vsub_vv_i32m2(t0e, t3e, vl);
-      vint32m2_t x1 = vadd_vv_i32m2(t1e, t2e, vl);
-      vint32m2_t x2 = vsub_vv_i32m2(t1e, t2e, vl);
-
-      // odd part
-      vint16m1_t sum15 = vadd_vv_i16m1(row1, row5, vl);
-      vint16m1_t sum17 = vadd_vv_i16m1(row1, row7, vl);
-      vint16m1_t sum35 = vadd_vv_i16m1(row3, row5, vl);
-      vint16m1_t sum37 = vadd_vv_i16m1(row3, row7, vl);
-      vint32m2_t p5o = vwmul_vx_i32m2(vadd_vv_i16m1(sum17, sum35, vl), rot1_0, vl);
-      vint32m2_t p1o = vwmacc_vx_i32m2(p5o, rot1_1, sum17, vl);
-      vint32m2_t p2o = vwmacc_vx_i32m2(p5o, rot1_2, sum35, vl);
-      vint32m2_t p3o = vwmul_vx_i32m2(sum37, rot2_0, vl);
-      vint32m2_t p4o = vwmul_vx_i32m2(sum15, rot2_1, vl);
-      vint32m2_t sump13o = vadd_vv_i32m2(p1o, p3o, vl);
-      vint32m2_t sump24o = vadd_vv_i32m2(p2o, p4o, vl);
-      vint32m2_t sump23o = vadd_vv_i32m2(p2o, p3o, vl);
-      vint32m2_t sump14o = vadd_vv_i32m2(p1o, p4o, vl);
-      vint32m2_t x4 = vwmacc_vx_i32m2(sump13o, rot3_0, row7, vl);
-      vint32m2_t x5 = vwmacc_vx_i32m2(sump24o, rot3_1, row5, vl);
-      vint32m2_t x6 = vwmacc_vx_i32m2(sump23o, rot3_2, row3, vl);
-      vint32m2_t x7 = vwmacc_vx_i32m2(sump14o, rot3_3, row1, vl);
-
-      // bfly32
-      x0 = vadd_vx_i32m2(x0, (int)(65536 + (128<<17)), vl);
-      x1 = vadd_vx_i32m2(x1, (int)(65536 + (128<<17)), vl);
-      x2 = vadd_vx_i32m2(x2, (int)(65536 + (128<<17)), vl);
-      x3 = vadd_vx_i32m2(x3, (int)(65536 + (128<<17)), vl);
-      vint16m1_t out0 = vnsra_wx_i16m1(vadd_vv_i32m2(x0, x7, vl), 17, vl);
-      vint16m1_t out7 = vnsra_wx_i16m1(vsub_vv_i32m2(x0, x7, vl), 17, vl);
-      vint16m1_t out1 = vnsra_wx_i16m1(vadd_vv_i32m2(x1, x6, vl), 17, vl);
-      vint16m1_t out6 = vnsra_wx_i16m1(vsub_vv_i32m2(x1, x6, vl), 17, vl);
-      vint16m1_t out2 = vnsra_wx_i16m1(vadd_vv_i32m2(x2, x5, vl), 17, vl);
-      vint16m1_t out5 = vnsra_wx_i16m1(vsub_vv_i32m2(x2, x5, vl), 17, vl);
-      vint16m1_t out3 = vnsra_wx_i16m1(vadd_vv_i32m2(x3, x4, vl), 17, vl);
-      vint16m1_t out4 = vnsra_wx_i16m1(vsub_vv_i32m2(x3, x4, vl), 17, vl);
-
-      // clamp 0~255
-      vuint8m1_t out0u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out0, 0, vl)), 0, vl);
-      vuint8m1_t out7u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out7, 0, vl)), 0, vl);
-      vuint8m1_t out1u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out1, 0, vl)), 0, vl);
-      vuint8m1_t out6u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out6, 0, vl)), 0, vl);
-      vuint8m1_t out2u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out2, 0, vl)), 0, vl);
-      vuint8m1_t out5u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out5, 0, vl)), 0, vl);
-      vuint8m1_t out3u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out3, 0, vl)), 0, vl);
-      vuint8m1_t out4u8 = vnclipu_wx_u8m1(vreinterpret_v_i16m1_u16m2(vmax_vx_i16m1(out4, 0, vl)), 0, vl);
-
-      // 8x8 transpose
-      vsse8_v_u8m1(out + 0, out_stride, out0u8, vl);
-      vsse8_v_u8m1(out + 1, out_stride, out1u8, vl);
-      vsse8_v_u8m1(out + 2, out_stride, out2u8, vl);
-      vsse8_v_u8m1(out + 3, out_stride, out3u8, vl);
-      vsse8_v_u8m1(out + 4, out_stride, out4u8, vl);
-      vsse8_v_u8m1(out + 5, out_stride, out5u8, vl);
-      vsse8_v_u8m1(out + 6, out_stride, out6u8, vl);
-      vsse8_v_u8m1(out + 7, out_stride, out7u8, vl);
-   }
-}
-
-#endif // STBI_RVV
-
 #define STBI__MARKER_none  0xff
 // if there's a pending marker from the entropy stream, return that
 // otherwise, fetch from the stream and get a marker. if there's no
@@ -3572,13 +3386,13 @@ static int stbi__decode_jpeg_header(stbi__jpeg *z, int scan)
    return 1;
 }
 
-static int stbi__skip_jpeg_junk_at_end(stbi__jpeg *j)
+static stbi_uc stbi__skip_jpeg_junk_at_end(stbi__jpeg *j)
 {
    // some JPEGs have junk at end, skip over it but if we find what looks
    // like a valid marker, resume there
    while (!stbi__at_eof(j->s)) {
-      int x = stbi__get8(j->s);
-      while (x == 255) { // might be a marker
+      stbi_uc x = stbi__get8(j->s);
+      while (x == 0xff) { // might be a marker
          if (stbi__at_eof(j->s)) return STBI__MARKER_none;
          x = stbi__get8(j->s);
          if (x != 0x00 && x != 0xff) {
@@ -3712,7 +3526,7 @@ static stbi_uc *stbi__resample_row_hv_2(stbi_uc *out, stbi_uc *in_near, stbi_uc 
    return out;
 }
 
-#if defined(STBI_SSE2) || defined(STBI_NEON) || defined(STBI_RVV)
+#if defined(STBI_SSE2) || defined(STBI_NEON)
 static stbi_uc *stbi__resample_row_hv_2_simd(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, int hs)
 {
    // need to generate 2x2 samples for every one in input
@@ -3724,48 +3538,6 @@ static stbi_uc *stbi__resample_row_hv_2_simd(stbi_uc *out, stbi_uc *in_near, stb
    }
 
    t1 = 3*in_near[0] + in_far[0];
-#if defined(STBI_RVV)
-   // process groups of vl*4 pixels for as long as we can.
-   // note we can't handle the last pixel in a row in this loop
-   // because we need to handle the filter boundary conditions.
-   int n = w-1;
-   while (n > 0) {
-      size_t vl = vsetvl_e8m4(n);
-
-      // load and perform the vertical filtering pass
-      vuint8m4_t farb  = vle8_v_u8m4(in_far + i, vl);
-      vuint8m4_t nearb = vle8_v_u8m4(in_near + i, vl);
-      vuint16m8_t curr  = vadd_vv_u16m8(vwmulu_vx_u16m8(nearb, 3, vl), vwcvtu_x_x_v_u16m8(farb, vl), vl); // current row
-
-      // horizontal filter works the same based on shifted vers of current
-      // row. "prev" is current row shifted right by 1 pixel; we need to
-      // insert the previous pixel value (from t1).
-      // "next" is current row shifted left by 1 pixel, with first pixel
-      // of next block of vl*4 pixels added in.
-      vuint16m8_t prev = vslide1up_vx_u16m8(curr, t1, vl);
-      vuint16m8_t next = vslide1down_vx_u16m8(curr, 3*in_near[i+vl] + in_far[i+vl], vl);
-
-      // horizontal filter, polyphase implementation since it's convenient:
-      // even pixels = 3*cur + prev + 8
-      // odd  pixels = 3*cur + next + 8
-      // note the shared term.
-      vuint16m8_t curs = vmacc_vx_u16m8(vmv_v_x_u16m8(8, vl), 3, curr, vl);
-      vuint16m8_t even = vadd_vv_u16m8(curs, prev, vl);
-      vuint16m8_t odd  = vadd_vv_u16m8(curs, next, vl);
-
-      // undo scaling and round, then store with even/odd phases interleaved
-      vuint8m4_t evenu8 = vnclipu_wx_u8m4(vsrl_vx_u16m8(even, 4, vl), 0, vl);
-      vuint8m4_t oddu8 = vnclipu_wx_u8m4(vsrl_vx_u16m8(odd, 4, vl), 0, vl);
-      vuint8m4x2_t o = vcreate_u8m4x2(evenu8, oddu8);
-      vsseg2e8_v_u8m4x2(out + i*2, o, vl);
-
-      // "previous" value for next iter
-      t1 = 3*in_near[i+(vl-1)] + in_far[i+(vl-1)];
-
-      i += vl;
-      n -= vl;
-   }
-#else
    // process groups of 8 pixels for as long as we can.
    // note we can't handle the last pixel in a row in this loop
    // because we need to handle the filter boundary conditions.
@@ -3852,7 +3624,6 @@ static stbi_uc *stbi__resample_row_hv_2_simd(stbi_uc *out, stbi_uc *in_near, stb
       // "previous" value for next iter
       t1 = 3*in_near[i+7] + in_far[i+7];
    }
-#endif
 
    t0 = t1;
    t1 = 3*in_near[i] + in_far[i];
@@ -3911,7 +3682,7 @@ static void stbi__YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc
    }
 }
 
-#if defined(STBI_SSE2) || defined(STBI_NEON) || defined(STBI_RVV)
+#if defined(STBI_SSE2) || defined(STBI_NEON)
 static void stbi__YCbCr_to_RGB_simd(stbi_uc *out, stbi_uc const *y, stbi_uc const *pcb, stbi_uc const *pcr, int count, int step)
 {
    int i = 0;
@@ -3978,47 +3749,7 @@ static void stbi__YCbCr_to_RGB_simd(stbi_uc *out, stbi_uc const *y, stbi_uc cons
 #endif
 
 #ifdef STBI_NEON
-   if (step == 3) {
-      // this is a fairly straightforward implementation and not super-optimized.
-      uint8x8_t signflip = vdup_n_u8(0x80);
-      int16x8_t cr_const0 = vdupq_n_s16(   (short) ( 1.40200f*4096.0f+0.5f));
-      int16x8_t cr_const1 = vdupq_n_s16( - (short) ( 0.71414f*4096.0f+0.5f));
-      int16x8_t cb_const0 = vdupq_n_s16( - (short) ( 0.34414f*4096.0f+0.5f));
-      int16x8_t cb_const1 = vdupq_n_s16(   (short) ( 1.77200f*4096.0f+0.5f));
-
-      for (; i+7 < count; i += 8) {
-         // load
-         uint8x8_t y_bytes  = vld1_u8(y + i);
-         uint8x8_t cr_bytes = vld1_u8(pcr + i);
-         uint8x8_t cb_bytes = vld1_u8(pcb + i);
-         int8x8_t cr_biased = vreinterpret_s8_u8(vsub_u8(cr_bytes, signflip));
-         int8x8_t cb_biased = vreinterpret_s8_u8(vsub_u8(cb_bytes, signflip));
-
-         // expand to s16
-         int16x8_t yws = vreinterpretq_s16_u16(vshll_n_u8(y_bytes, 4));
-         int16x8_t crw = vshll_n_s8(cr_biased, 7);
-         int16x8_t cbw = vshll_n_s8(cb_biased, 7);
-
-         // color transform
-         int16x8_t cr0 = vqdmulhq_s16(crw, cr_const0);
-         int16x8_t cb0 = vqdmulhq_s16(cbw, cb_const0);
-         int16x8_t cr1 = vqdmulhq_s16(crw, cr_const1);
-         int16x8_t cb1 = vqdmulhq_s16(cbw, cb_const1);
-         int16x8_t rws = vaddq_s16(yws, cr0);
-         int16x8_t gws = vaddq_s16(vaddq_s16(yws, cb0), cr1);
-         int16x8_t bws = vaddq_s16(yws, cb1);
-
-         // undo scaling, round, convert to byte
-         uint8x8x3_t o;
-         o.val[0] = vqrshrun_n_s16(rws, 4);
-         o.val[1] = vqrshrun_n_s16(gws, 4);
-         o.val[2] = vqrshrun_n_s16(bws, 4);
-
-         // store, interleaving r/g/b
-         vst3_u8(out, o);
-         out += 8*3;
-      }
-   }
+   // in this version, step=3 support would be easy to add. but is there demand?
    if (step == 4) {
       // this is a fairly straightforward implementation and not super-optimized.
       uint8x8_t signflip = vdup_n_u8(0x80);
@@ -4060,103 +3791,39 @@ static void stbi__YCbCr_to_RGB_simd(stbi_uc *out, stbi_uc const *y, stbi_uc cons
          vst4_u8(out, o);
          out += 8*4;
       }
-   }
-#endif
+   } else if (step == 3) {
+      uint8x8_t signflip = vdup_n_u8(0x80);
+      int16x8_t cr_const0 = vdupq_n_s16(   (short) ( 1.40200f*4096.0f+0.5f));
+      int16x8_t cr_const1 = vdupq_n_s16( - (short) ( 0.71414f*4096.0f+0.5f));
+      int16x8_t cb_const0 = vdupq_n_s16( - (short) ( 0.34414f*4096.0f+0.5f));
+      int16x8_t cb_const1 = vdupq_n_s16(   (short) ( 1.77200f*4096.0f+0.5f));
 
-#ifdef STBI_RVV
-   if (step == 3) {
-      // this is a fairly straightforward implementation and not super-optimized.
-      const unsigned char signflip = 0x80;
-      const short cr_const0 =    (short) ( 1.40200f*4096.0f+0.5f);
-      const short cr_const1 =  - (short) ( 0.71414f*4096.0f+0.5f);
-      const short cb_const0 =  - (short) ( 0.34414f*4096.0f+0.5f);
-      const short cb_const1 =    (short) ( 1.77200f*4096.0f+0.5f);
+      for (; i+7 < count; i += 8) {
+         uint8x8_t y_bytes  = vld1_u8(y + i);
+         uint8x8_t cr_bytes = vld1_u8(pcr + i);
+         uint8x8_t cb_bytes = vld1_u8(pcb + i);
+         int8x8_t cr_biased = vreinterpret_s8_u8(vsub_u8(cr_bytes, signflip));
+         int8x8_t cb_biased = vreinterpret_s8_u8(vsub_u8(cb_bytes, signflip));
 
-      int n = count;
-      while (n > 0) {
-         size_t vl = vsetvl_e8m2(n);
+         int16x8_t yws = vreinterpretq_s16_u16(vshll_n_u8(y_bytes, 4));
+         int16x8_t crw = vshll_n_s8(cr_biased, 7);
+         int16x8_t cbw = vshll_n_s8(cb_biased, 7);
 
-         // load
-         vuint8m2_t y_bytes  = vle8_v_u8m2(y + i, vl);
-         vuint8m2_t cr_bytes = vle8_v_u8m2(pcr + i, vl);
-         vuint8m2_t cb_bytes = vle8_v_u8m2(pcb + i, vl);
-         vint8m2_t cr_biased = vreinterpret_v_u8m2_i8m2(vsub_vx_u8m2(cr_bytes, signflip, vl));
-         vint8m2_t cb_biased = vreinterpret_v_u8m2_i8m2(vsub_vx_u8m2(cb_bytes, signflip, vl));
+         int16x8_t cr0 = vqdmulhq_s16(crw, cr_const0);
+         int16x8_t cb0 = vqdmulhq_s16(cbw, cb_const0);
+         int16x8_t cr1 = vqdmulhq_s16(crw, cr_const1);
+         int16x8_t cb1 = vqdmulhq_s16(cbw, cb_const1);
+         int16x8_t rws = vaddq_s16(yws, cr0);
+         int16x8_t gws = vaddq_s16(vaddq_s16(yws, cb0), cr1);
+         int16x8_t bws = vaddq_s16(yws, cb1);
 
-         // expand to s16
-         vint16m4_t yws = vadd_vx_i16m4(vsll_vx_i16m4(vreinterpret_v_u16m4_i16m4(vwcvtu_x_x_v_u16m4(y_bytes, vl)), 4, vl), 8, vl);
-         vint16m4_t crw = vsll_vx_i16m4(vwcvt_x_x_v_i16m4(cr_biased, vl), 8, vl);
-         vint16m4_t cbw = vsll_vx_i16m4(vwcvt_x_x_v_i16m4(cb_biased, vl), 8, vl);
+         uint8x8x3_t o;
+         o.val[0] = vqrshrun_n_s16(rws, 4);
+         o.val[1] = vqrshrun_n_s16(gws, 4);
+         o.val[2] = vqrshrun_n_s16(bws, 4);
 
-         // color transform
-         vint16m4_t cr0 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(crw, cr_const0, vl), 16, vl), 0, vl);
-         vint16m4_t cb0 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(cbw, cb_const0, vl), 16, vl), 0, vl);
-         vint16m4_t cr1 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(crw, cr_const1, vl), 16, vl), 0, vl);
-         vint16m4_t cb1 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(cbw, cb_const1, vl), 16, vl), 0, vl);
-         vint16m4_t rws = vadd_vv_i16m4(yws, cr0, vl);
-         vint16m4_t gws = vadd_vv_i16m4(vadd_vv_i16m4(yws, cb0, vl), cr1, vl);
-         vint16m4_t bws = vadd_vv_i16m4(yws, cb1, vl);
-
-         // undo scaling, round, convert to byte
-         vuint8m2_t rb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(rws, 4, vl), 0, vl)), 0, vl);
-         vuint8m2_t gb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(gws, 4, vl), 0, vl)), 0, vl);
-         vuint8m2_t bb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(bws, 4, vl), 0, vl)), 0, vl);
-
-         // store, interleaving r/g/b
-         vuint8m2x3_t o = vcreate_u8m2x3(rb, gb, bb);
-         vsseg3e8_v_u8m2x3(out, o, vl);
-         out += vl*3;
-
-         i += vl;
-         n -= vl;
-      }
-   }
-   if (step == 4) {
-      // this is a fairly straightforward implementation and not super-optimized.
-      const unsigned char signflip = 128;
-      const short cr_const0 =    (short) ( 1.40200f*4096.0f+0.5f);
-      const short cr_const1 =  - (short) ( 0.71414f*4096.0f+0.5f);
-      const short cb_const0 =  - (short) ( 0.34414f*4096.0f+0.5f);
-      const short cb_const1 =    (short) ( 1.77200f*4096.0f+0.5f);
-
-      int n = count;
-      while (n > 0) {
-         size_t vl = vsetvl_e8m1(n);
-
-         // load
-         vuint8m2_t y_bytes  = vle8_v_u8m2(y + i, vl);
-         vuint8m2_t cr_bytes = vle8_v_u8m2(pcr + i, vl);
-         vuint8m2_t cb_bytes = vle8_v_u8m2(pcb + i, vl);
-         vint8m2_t cr_biased = vreinterpret_v_u8m2_i8m2(vsub_vx_u8m2(cr_bytes, signflip, vl));
-         vint8m2_t cb_biased = vreinterpret_v_u8m2_i8m2(vsub_vx_u8m2(cb_bytes, signflip, vl));
-
-         // expand to s16
-         vint16m4_t yws = vadd_vx_i16m4(vsll_vx_i16m4(vreinterpret_v_u16m4_i16m4(vwcvtu_x_x_v_u16m4(y_bytes, vl)), 4, vl), 8, vl);
-         vint16m4_t crw = vsll_vx_i16m4(vwcvt_x_x_v_i16m4(cr_biased, vl), 8, vl);
-         vint16m4_t cbw = vsll_vx_i16m4(vwcvt_x_x_v_i16m4(cb_biased, vl), 8, vl);
-
-         // color transform
-         vint16m4_t cr0 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(crw, cr_const0, vl), 16, vl), 0, vl);
-         vint16m4_t cb0 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(cbw, cb_const0, vl), 16, vl), 0, vl);
-         vint16m4_t cr1 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(crw, cr_const1, vl), 16, vl), 0, vl);
-         vint16m4_t cb1 = vnclip_wx_i16m4(vsra_vx_i32m8(vwmul_vx_i32m8(cbw, cb_const1, vl), 16, vl), 0, vl);
-         vint16m4_t rws = vadd_vv_i16m4(yws, cr0, vl);
-         vint16m4_t gws = vadd_vv_i16m4(vadd_vv_i16m4(yws, cb0, vl), cr1, vl);
-         vint16m4_t bws = vadd_vv_i16m4(yws, cb1, vl);
-
-         // undo scaling, round, convert to byte
-         vuint8m2_t rb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(rws, 4, vl), 0, vl)), 0, vl);
-         vuint8m2_t gb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(gws, 4, vl), 0, vl)), 0, vl);
-         vuint8m2_t bb = vnclipu_wx_u8m2(vreinterpret_v_i16m4_u16m4(vmax_vx_i16m4(vsra_vx_i16m4(bws, 4, vl), 0, vl)), 0, vl);
-         vuint8m2_t ab = vmv_v_x_u8m2(255, vl);
-
-         // store, interleaving r/g/b/a
-         vuint8m2x4_t o = vcreate_u8m2x4(rb, gb, bb, ab);
-         vsseg4e8_v_u8m2x4(out, o, vl);
-         out += vl*4;
-
-         i += vl;
-         n -= vl;
+         vst3_u8(out, o);
+         out += 8*3;
       }
    }
 #endif
@@ -4200,12 +3867,6 @@ static void stbi__setup_jpeg(stbi__jpeg *j)
 #endif
 
 #ifdef STBI_NEON
-   j->idct_block_kernel = stbi__idct_simd;
-   j->YCbCr_to_RGB_kernel = stbi__YCbCr_to_RGB_simd;
-   j->resample_row_hv_2_kernel = stbi__resample_row_hv_2_simd;
-#endif
-
-#ifdef STBI_RVV
    j->idct_block_kernel = stbi__idct_simd;
    j->YCbCr_to_RGB_kernel = stbi__YCbCr_to_RGB_simd;
    j->resample_row_hv_2_kernel = stbi__resample_row_hv_2_simd;
@@ -4551,6 +4212,7 @@ typedef struct
 {
    stbi_uc *zbuffer, *zbuffer_end;
    int num_bits;
+   int hit_zeof_once;
    stbi__uint32 code_buffer;
 
    char *zout;
@@ -4617,9 +4279,20 @@ stbi_inline static int stbi__zhuffman_decode(stbi__zbuf *a, stbi__zhuffman *z)
    int b,s;
    if (a->num_bits < 16) {
       if (stbi__zeof(a)) {
-         return -1;   /* report error for unexpected end of data. */
+         if (!a->hit_zeof_once) {
+            // This is the first time we hit eof, insert 16 extra padding btis
+            // to allow us to keep going; if we actually consume any of them
+            // though, that is invalid data. This is caught later.
+            a->hit_zeof_once = 1;
+            a->num_bits += 16; // add 16 implicit zero bits
+         } else {
+            // We already inserted our extra 16 padding bits and are again
+            // out, this stream is actually prematurely terminated.
+            return -1;
+         }
+      } else {
+         stbi__fill_bits(a);
       }
-      stbi__fill_bits(a);
    }
    b = z->fast[a->code_buffer & STBI__ZFAST_MASK];
    if (b) {
@@ -4684,6 +4357,13 @@ static int stbi__parse_huffman_block(stbi__zbuf *a)
          int len,dist;
          if (z == 256) {
             a->zout = zout;
+            if (a->hit_zeof_once && a->num_bits < 16) {
+               // The first time we hit zeof, we inserted 16 extra zero bits into our bit
+               // buffer so the decoder can just do its speculative decoding. But if we
+               // actually consumed any of those bits (which is the case when num_bits < 16),
+               // the stream actually read past the end so it is malformed.
+               return stbi__err("unexpected end","Corrupt PNG");
+            }
             return 1;
          }
          if (z >= 286) return stbi__err("bad huffman code","Corrupt PNG"); // per DEFLATE, length codes 286 and 287 must not appear in compressed data
@@ -4695,7 +4375,7 @@ static int stbi__parse_huffman_block(stbi__zbuf *a)
          dist = stbi__zdist_base[z];
          if (stbi__zdist_extra[z]) dist += stbi__zreceive(a, stbi__zdist_extra[z]);
          if (zout - a->zout_start < dist) return stbi__err("bad dist","Corrupt PNG");
-         if (zout + len > a->zout_end) {
+         if (len > a->zout_end - zout) {
             if (!stbi__zexpand(a, zout, len)) return 0;
             zout = a->zout;
          }
@@ -4839,6 +4519,7 @@ static int stbi__parse_zlib(stbi__zbuf *a, int parse_header)
       if (!stbi__parse_zlib_header(a)) return 0;
    a->num_bits = 0;
    a->code_buffer = 0;
+   a->hit_zeof_once = 0;
    do {
       final = stbi__zreceive(a,1);
       type = stbi__zreceive(a,2);
@@ -4994,9 +4675,8 @@ enum {
    STBI__F_up=2,
    STBI__F_avg=3,
    STBI__F_paeth=4,
-   // synthetic filters used for first scanline to avoid needing a dummy row of 0s
-   STBI__F_avg_first,
-   STBI__F_paeth_first
+   // synthetic filter used for first scanline to avoid needing a dummy row of 0s
+   STBI__F_avg_first
 };
 
 static stbi_uc first_row_filter[5] =
@@ -5005,29 +4685,56 @@ static stbi_uc first_row_filter[5] =
    STBI__F_sub,
    STBI__F_none,
    STBI__F_avg_first,
-   STBI__F_paeth_first
+   STBI__F_sub // Paeth with b=c=0 turns out to be equivalent to sub
 };
 
 static int stbi__paeth(int a, int b, int c)
 {
-   int p = a + b - c;
-   int pa = abs(p-a);
-   int pb = abs(p-b);
-   int pc = abs(p-c);
-   if (pa <= pb && pa <= pc) return a;
-   if (pb <= pc) return b;
-   return c;
+   // This formulation looks very different from the reference in the PNG spec, but is
+   // actually equivalent and has favorable data dependencies and admits straightforward
+   // generation of branch-free code, which helps performance significantly.
+   int thresh = c*3 - (a + b);
+   int lo = a < b ? a : b;
+   int hi = a < b ? b : a;
+   int t0 = (hi <= thresh) ? lo : c;
+   int t1 = (thresh <= lo) ? hi : t0;
+   return t1;
 }
 
 static const stbi_uc stbi__depth_scale_table[9] = { 0, 0xff, 0x55, 0, 0x11, 0,0,0, 0x01 };
 
+// adds an extra all-255 alpha channel
+// dest == src is legal
+// img_n must be 1 or 3
+static void stbi__create_png_alpha_expand8(stbi_uc *dest, stbi_uc *src, stbi__uint32 x, int img_n)
+{
+   int i;
+   // must process data backwards since we allow dest==src
+   if (img_n == 1) {
+      for (i=x-1; i >= 0; --i) {
+         dest[i*2+1] = 255;
+         dest[i*2+0] = src[i];
+      }
+   } else {
+      STBI_ASSERT(img_n == 3);
+      for (i=x-1; i >= 0; --i) {
+         dest[i*4+3] = 255;
+         dest[i*4+2] = src[i*3+2];
+         dest[i*4+1] = src[i*3+1];
+         dest[i*4+0] = src[i*3+0];
+      }
+   }
+}
+
 // create the png data from post-deflated data
 static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 raw_len, int out_n, stbi__uint32 x, stbi__uint32 y, int depth, int color)
 {
-   int bytes = (depth == 16? 2 : 1);
+   int bytes = (depth == 16 ? 2 : 1);
    stbi__context *s = a->s;
    stbi__uint32 i,j,stride = x*out_n*bytes;
    stbi__uint32 img_len, img_width_bytes;
+   stbi_uc *filter_buf;
+   int all_ok = 1;
    int k;
    int img_n = s->img_n; // copy it into a local for later
 
@@ -5039,8 +4746,11 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
    a->out = (stbi_uc *) stbi__malloc_mad3(x, y, output_bytes, 0); // extra bytes to write off the end into
    if (!a->out) return stbi__err("outofmem", "Out of memory");
 
+   // note: error exits here don't need to clean up a->out individually,
+   // stbi__do_png always does on error.
    if (!stbi__mad3sizes_valid(img_n, x, depth, 7)) return stbi__err("too large", "Corrupt PNG");
    img_width_bytes = (((img_n * x * depth) + 7) >> 3);
+   if (!stbi__mad2sizes_valid(img_width_bytes, y, img_width_bytes)) return stbi__err("too large", "Corrupt PNG");
    img_len = (img_width_bytes + 1) * y;
 
    // we used to check for exact match between raw_len and img_len on non-interlaced PNGs,
@@ -5048,188 +4758,136 @@ static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 r
    // so just check for raw_len < img_len always.
    if (raw_len < img_len) return stbi__err("not enough pixels","Corrupt PNG");
 
+   // Allocate two scan lines worth of filter workspace buffer.
+   filter_buf = (stbi_uc *) stbi__malloc_mad2(img_width_bytes, 2, 0);
+   if (!filter_buf) return stbi__err("outofmem", "Out of memory");
+
+   // Filtering for low-bit-depth images
+   if (depth < 8) {
+      filter_bytes = 1;
+      width = img_width_bytes;
+   }
+
    for (j=0; j < y; ++j) {
-      stbi_uc *cur = a->out + stride*j;
-      stbi_uc *prior;
+      // cur/prior filter buffers alternate
+      stbi_uc *cur = filter_buf + (j & 1)*img_width_bytes;
+      stbi_uc *prior = filter_buf + (~j & 1)*img_width_bytes;
+      stbi_uc *dest = a->out + stride*j;
+      int nk = width * filter_bytes;
       int filter = *raw++;
 
-      if (filter > 4)
-         return stbi__err("invalid filter","Corrupt PNG");
-
-      if (depth < 8) {
-         if (img_width_bytes > x) return stbi__err("invalid width","Corrupt PNG");
-         cur += x*out_n - img_width_bytes; // store output to the rightmost img_len bytes, so we can decode in place
-         filter_bytes = 1;
-         width = img_width_bytes;
+      // check filter type
+      if (filter > 4) {
+         all_ok = stbi__err("invalid filter","Corrupt PNG");
+         break;
       }
-      prior = cur - stride; // bugfix: need to compute this after 'cur +=' computation above
 
       // if first row, use special filter that doesn't sample previous row
       if (j == 0) filter = first_row_filter[filter];
 
-      // handle first byte explicitly
-      for (k=0; k < filter_bytes; ++k) {
-         switch (filter) {
-            case STBI__F_none       : cur[k] = raw[k]; break;
-            case STBI__F_sub        : cur[k] = raw[k]; break;
-            case STBI__F_up         : cur[k] = STBI__BYTECAST(raw[k] + prior[k]); break;
-            case STBI__F_avg        : cur[k] = STBI__BYTECAST(raw[k] + (prior[k]>>1)); break;
-            case STBI__F_paeth      : cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(0,prior[k],0)); break;
-            case STBI__F_avg_first  : cur[k] = raw[k]; break;
-            case STBI__F_paeth_first: cur[k] = raw[k]; break;
-         }
+      // perform actual filtering
+      switch (filter) {
+      case STBI__F_none:
+         memcpy(cur, raw, nk);
+         break;
+      case STBI__F_sub:
+         memcpy(cur, raw, filter_bytes);
+         for (k = filter_bytes; k < nk; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + cur[k-filter_bytes]);
+         break;
+      case STBI__F_up:
+         for (k = 0; k < nk; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + prior[k]);
+         break;
+      case STBI__F_avg:
+         for (k = 0; k < filter_bytes; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + (prior[k]>>1));
+         for (k = filter_bytes; k < nk; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + ((prior[k] + cur[k-filter_bytes])>>1));
+         break;
+      case STBI__F_paeth:
+         for (k = 0; k < filter_bytes; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + prior[k]); // prior[k] == stbi__paeth(0,prior[k],0)
+         for (k = filter_bytes; k < nk; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k-filter_bytes], prior[k], prior[k-filter_bytes]));
+         break;
+      case STBI__F_avg_first:
+         memcpy(cur, raw, filter_bytes);
+         for (k = filter_bytes; k < nk; ++k)
+            cur[k] = STBI__BYTECAST(raw[k] + (cur[k-filter_bytes] >> 1));
+         break;
       }
 
-      if (depth == 8) {
-         if (img_n != out_n)
-            cur[img_n] = 255; // first pixel
-         raw += img_n;
-         cur += out_n;
-         prior += out_n;
-      } else if (depth == 16) {
-         if (img_n != out_n) {
-            cur[filter_bytes]   = 255; // first pixel top byte
-            cur[filter_bytes+1] = 255; // first pixel bottom byte
-         }
-         raw += filter_bytes;
-         cur += output_bytes;
-         prior += output_bytes;
-      } else {
-         raw += 1;
-         cur += 1;
-         prior += 1;
-      }
+      raw += nk;
 
-      // this is a little gross, so that we don't switch per-pixel or per-component
-      if (depth < 8 || img_n == out_n) {
-         int nk = (width - 1)*filter_bytes;
-         #define STBI__CASE(f) \
-             case f:     \
-                for (k=0; k < nk; ++k)
-         switch (filter) {
-            // "none" filter turns into a memcpy here; make that explicit.
-            case STBI__F_none:         memcpy(cur, raw, nk); break;
-            STBI__CASE(STBI__F_sub)          { cur[k] = STBI__BYTECAST(raw[k] + cur[k-filter_bytes]); } break;
-            STBI__CASE(STBI__F_up)           { cur[k] = STBI__BYTECAST(raw[k] + prior[k]); } break;
-            STBI__CASE(STBI__F_avg)          { cur[k] = STBI__BYTECAST(raw[k] + ((prior[k] + cur[k-filter_bytes])>>1)); } break;
-            STBI__CASE(STBI__F_paeth)        { cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k-filter_bytes],prior[k],prior[k-filter_bytes])); } break;
-            STBI__CASE(STBI__F_avg_first)    { cur[k] = STBI__BYTECAST(raw[k] + (cur[k-filter_bytes] >> 1)); } break;
-            STBI__CASE(STBI__F_paeth_first)  { cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k-filter_bytes],0,0)); } break;
-         }
-         #undef STBI__CASE
-         raw += nk;
-      } else {
-         STBI_ASSERT(img_n+1 == out_n);
-         #define STBI__CASE(f) \
-             case f:     \
-                for (i=x-1; i >= 1; --i, cur[filter_bytes]=255,raw+=filter_bytes,cur+=output_bytes,prior+=output_bytes) \
-                   for (k=0; k < filter_bytes; ++k)
-         switch (filter) {
-            STBI__CASE(STBI__F_none)         { cur[k] = raw[k]; } break;
-            STBI__CASE(STBI__F_sub)          { cur[k] = STBI__BYTECAST(raw[k] + cur[k- output_bytes]); } break;
-            STBI__CASE(STBI__F_up)           { cur[k] = STBI__BYTECAST(raw[k] + prior[k]); } break;
-            STBI__CASE(STBI__F_avg)          { cur[k] = STBI__BYTECAST(raw[k] + ((prior[k] + cur[k- output_bytes])>>1)); } break;
-            STBI__CASE(STBI__F_paeth)        { cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k- output_bytes],prior[k],prior[k- output_bytes])); } break;
-            STBI__CASE(STBI__F_avg_first)    { cur[k] = STBI__BYTECAST(raw[k] + (cur[k- output_bytes] >> 1)); } break;
-            STBI__CASE(STBI__F_paeth_first)  { cur[k] = STBI__BYTECAST(raw[k] + stbi__paeth(cur[k- output_bytes],0,0)); } break;
-         }
-         #undef STBI__CASE
-
-         // the loop above sets the high byte of the pixels' alpha, but for
-         // 16 bit png files we also need the low byte set. we'll do that here.
-         if (depth == 16) {
-            cur = a->out + stride*j; // start at the beginning of the row again
-            for (i=0; i < x; ++i,cur+=output_bytes) {
-               cur[filter_bytes+1] = 255;
-            }
-         }
-      }
-   }
-
-   // we make a separate pass to expand bits to pixels; for performance,
-   // this could run two scanlines behind the above code, so it won't
-   // intefere with filtering but will still be in the cache.
-   if (depth < 8) {
-      for (j=0; j < y; ++j) {
-         stbi_uc *cur = a->out + stride*j;
-         stbi_uc *in  = a->out + stride*j + x*out_n - img_width_bytes;
-         // unpack 1/2/4-bit into a 8-bit buffer. allows us to keep the common 8-bit path optimal at minimal cost for 1/2/4-bit
-         // png guarante byte alignment, if width is not multiple of 8/4/2 we'll decode dummy trailing data that will be skipped in the later loop
+      // expand decoded bits in cur to dest, also adding an extra alpha channel if desired
+      if (depth < 8) {
          stbi_uc scale = (color == 0) ? stbi__depth_scale_table[depth] : 1; // scale grayscale values to 0..255 range
+         stbi_uc *in = cur;
+         stbi_uc *out = dest;
+         stbi_uc inb = 0;
+         stbi__uint32 nsmp = x*img_n;
 
-         // note that the final byte might overshoot and write more data than desired.
-         // we can allocate enough data that this never writes out of memory, but it
-         // could also overwrite the next scanline. can it overwrite non-empty data
-         // on the next scanline? yes, consider 1-pixel-wide scanlines with 1-bit-per-pixel.
-         // so we need to explicitly clamp the final ones
-
+         // expand bits to bytes first
          if (depth == 4) {
-            for (k=x*img_n; k >= 2; k-=2, ++in) {
-               *cur++ = scale * ((*in >> 4)       );
-               *cur++ = scale * ((*in     ) & 0x0f);
+            for (i=0; i < nsmp; ++i) {
+               if ((i & 1) == 0) inb = *in++;
+               *out++ = scale * (inb >> 4);
+               inb <<= 4;
             }
-            if (k > 0) *cur++ = scale * ((*in >> 4)       );
          } else if (depth == 2) {
-            for (k=x*img_n; k >= 4; k-=4, ++in) {
-               *cur++ = scale * ((*in >> 6)       );
-               *cur++ = scale * ((*in >> 4) & 0x03);
-               *cur++ = scale * ((*in >> 2) & 0x03);
-               *cur++ = scale * ((*in     ) & 0x03);
+            for (i=0; i < nsmp; ++i) {
+               if ((i & 3) == 0) inb = *in++;
+               *out++ = scale * (inb >> 6);
+               inb <<= 2;
             }
-            if (k > 0) *cur++ = scale * ((*in >> 6)       );
-            if (k > 1) *cur++ = scale * ((*in >> 4) & 0x03);
-            if (k > 2) *cur++ = scale * ((*in >> 2) & 0x03);
-         } else if (depth == 1) {
-            for (k=x*img_n; k >= 8; k-=8, ++in) {
-               *cur++ = scale * ((*in >> 7)       );
-               *cur++ = scale * ((*in >> 6) & 0x01);
-               *cur++ = scale * ((*in >> 5) & 0x01);
-               *cur++ = scale * ((*in >> 4) & 0x01);
-               *cur++ = scale * ((*in >> 3) & 0x01);
-               *cur++ = scale * ((*in >> 2) & 0x01);
-               *cur++ = scale * ((*in >> 1) & 0x01);
-               *cur++ = scale * ((*in     ) & 0x01);
+         } else {
+            STBI_ASSERT(depth == 1);
+            for (i=0; i < nsmp; ++i) {
+               if ((i & 7) == 0) inb = *in++;
+               *out++ = scale * (inb >> 7);
+               inb <<= 1;
             }
-            if (k > 0) *cur++ = scale * ((*in >> 7)       );
-            if (k > 1) *cur++ = scale * ((*in >> 6) & 0x01);
-            if (k > 2) *cur++ = scale * ((*in >> 5) & 0x01);
-            if (k > 3) *cur++ = scale * ((*in >> 4) & 0x01);
-            if (k > 4) *cur++ = scale * ((*in >> 3) & 0x01);
-            if (k > 5) *cur++ = scale * ((*in >> 2) & 0x01);
-            if (k > 6) *cur++ = scale * ((*in >> 1) & 0x01);
          }
-         if (img_n != out_n) {
-            int q;
-            // insert alpha = 255
-            cur = a->out + stride*j;
+
+         // insert alpha=255 values if desired
+         if (img_n != out_n)
+            stbi__create_png_alpha_expand8(dest, dest, x, img_n);
+      } else if (depth == 8) {
+         if (img_n == out_n)
+            memcpy(dest, cur, x*img_n);
+         else
+            stbi__create_png_alpha_expand8(dest, cur, x, img_n);
+      } else if (depth == 16) {
+         // convert the image data from big-endian to platform-native
+         stbi__uint16 *dest16 = (stbi__uint16*)dest;
+         stbi__uint32 nsmp = x*img_n;
+
+         if (img_n == out_n) {
+            for (i = 0; i < nsmp; ++i, ++dest16, cur += 2)
+               *dest16 = (cur[0] << 8) | cur[1];
+         } else {
+            STBI_ASSERT(img_n+1 == out_n);
             if (img_n == 1) {
-               for (q=x-1; q >= 0; --q) {
-                  cur[q*2+1] = 255;
-                  cur[q*2+0] = cur[q];
+               for (i = 0; i < x; ++i, dest16 += 2, cur += 2) {
+                  dest16[0] = (cur[0] << 8) | cur[1];
+                  dest16[1] = 0xffff;
                }
             } else {
                STBI_ASSERT(img_n == 3);
-               for (q=x-1; q >= 0; --q) {
-                  cur[q*4+3] = 255;
-                  cur[q*4+2] = cur[q*3+2];
-                  cur[q*4+1] = cur[q*3+1];
-                  cur[q*4+0] = cur[q*3+0];
+               for (i = 0; i < x; ++i, dest16 += 4, cur += 6) {
+                  dest16[0] = (cur[0] << 8) | cur[1];
+                  dest16[1] = (cur[2] << 8) | cur[3];
+                  dest16[2] = (cur[4] << 8) | cur[5];
+                  dest16[3] = 0xffff;
                }
             }
          }
       }
-   } else if (depth == 16) {
-      // force the image data from big-endian to platform-native.
-      // this is done in a separate pass due to the decoding relying
-      // on the data being untouched, but could probably be done
-      // per-line during decode if care is taken.
-      stbi_uc *cur = a->out;
-      stbi__uint16 *cur16 = (stbi__uint16*)cur;
-
-      for(i=0; i < x*y*out_n; ++i,cur16++,cur+=2) {
-         *cur16 = (cur[0] << 8) | cur[1];
-      }
    }
+
+   STBI_FREE(filter_buf);
+   if (!all_ok) return 0;
 
    return 1;
 }
@@ -5536,9 +5194,11 @@ static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)
                // non-paletted with tRNS = constant alpha. if header-scanning, we can stop now.
                if (scan == STBI__SCAN_header) { ++s->img_n; return 1; }
                if (z->depth == 16) {
-                  for (k = 0; k < s->img_n; ++k) tc16[k] = (stbi__uint16)stbi__get16be(s); // copy the values as-is
+                  for (k = 0; k < s->img_n && k < 3; ++k) // extra loop test to suppress false GCC warning
+                     tc16[k] = (stbi__uint16)stbi__get16be(s); // copy the values as-is
                } else {
-                  for (k = 0; k < s->img_n; ++k) tc[k] = (stbi_uc)(stbi__get16be(s) & 255) * stbi__depth_scale_table[z->depth]; // non 8-bit images will be larger
+                  for (k = 0; k < s->img_n && k < 3; ++k)
+                     tc[k] = (stbi_uc)(stbi__get16be(s) & 255) * stbi__depth_scale_table[z->depth]; // non 8-bit images will be larger
                }
             }
             break;

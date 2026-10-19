@@ -613,9 +613,9 @@ static const layer_registry_entry layer_registry_arch[] = {
 {Eltwise_arm_layer_creator},
 #endif
 #if NCNN_STRING
-{"ELU", ELU_arm_layer_creator},
+{"ELU", 0},
 #else
-{ELU_arm_layer_creator},
+{0},
 #endif
 #if NCNN_STRING
 {"Embed", 0},
@@ -1058,9 +1058,9 @@ static const layer_registry_entry layer_registry_arch[] = {
 {0},
 #endif
 #if NCNN_STRING
-{"Erf", Erf_arm_layer_creator},
+{"Erf", 0},
 #else
-{Erf_arm_layer_creator},
+{0},
 #endif
 #if NCNN_STRING
 {"Diag", 0},
@@ -1098,14 +1098,14 @@ static const layer_registry_entry layer_registry_arch[] = {
 {0},
 #endif
 #if NCNN_STRING
-{"SDPA", SDPA_arm_layer_creator},
+{"SDPA", 0},
 #else
-{SDPA_arm_layer_creator},
+{0},
 #endif
 #if NCNN_STRING
-{"RotaryEmbed", RotaryEmbed_arm_layer_creator},
+{"RotaryEmbed", 0},
 #else
-{RotaryEmbed_arm_layer_creator},
+{0},
 #endif
 
 };
